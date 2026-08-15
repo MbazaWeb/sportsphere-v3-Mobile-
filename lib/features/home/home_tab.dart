@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../search/presentation/search_sheet.dart';
 import '../notifications/presentation/notifications_sheet.dart';
+import '../leaderboard/leaderboard_sheet.dart';
 import 'widgets/home_header.dart';
 import 'widgets/sportlights_tab.dart';
 import 'widgets/trending_tab.dart';
@@ -49,8 +50,11 @@ class _HomeTabState extends State<HomeTab> {
           onSearch: _openSearch,
           onNotifications: _openNotifications,
           onLeaderboard: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Leaderboard — next')),
+            showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const LeaderboardSheet(),
             );
           },
         ),
