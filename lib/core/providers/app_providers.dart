@@ -121,8 +121,54 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 });
 
 final feedProvider = FutureProvider.family<List<Post>, String?>((ref, type) async {
-  return ref.watch(feedApiProvider).getFeed(type: type, limit: 30);
+  try {
+    return await ref.watch(feedApiProvider).getFeed(type: type, limit: 30);
+  } catch (e) {
+    // Flutter Web + localhost is blocked by CORS until the API allows the origin.
+    // Surface the error so UI can show Retry + guidance; callers may use sampleFeedOnWeb.
+    rethrow;
+  }
 });
+
+/// True when the last failure looks like browser CORS / network block.
+bool isLikelyCorsError(Object e) {
+  final m = e.toString().toLowerCase();
+  return m.contains('failed to fetch') ||
+      m.contains('cors') ||
+      m.contains('xmlhttprequest') ||
+      m.contains('network error') ||
+      m.contains('clientexception');
+}
+
+/// Minimal sample posts so web UI work can continue while CORS is unresolved.
+List<Post> sampleFeedPosts() {
+  const u = PostUser(
+    id: 'demo',
+    name: 'SportSphere',
+    handle: '@sportsphere',
+    isVerified: true,
+  );
+  return [
+    Post(
+      id: 'sample-1',
+      userId: 'demo',
+      content:
+          'Welcome to SportSphere. Live feed is blocked in this browser by CORS — use Android, or run: flutter run -d chrome --web-browser-flag "--disable-web-security" --web-browser-flag "--user-data-dir=C:\\Temp\\flutter_chrome_dev"',
+      postType: 'post',
+      createdAt: DateTime.now().toUtc().toIso8601String(),
+      user: u,
+    ),
+    Post(
+      id: 'sample-2',
+      userId: 'demo',
+      content:
+          'UI continues with this sample. When the API allows localhost (or you use the Chrome flags above), real posts load.',
+      postType: 'post',
+      createdAt: DateTime.now().toUtc().toIso8601String(),
+      user: u,
+    ),
+  ];
+}
 
 final matchesProvider = FutureProvider.family<List<MatchItem>, String?>((ref, status) async {
   return ref.watch(matchesApiProvider).getMatches(status: status);

@@ -22,10 +22,49 @@ class SportlightsTab extends ConsumerWidget {
           child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
         ),
       ),
-      error: (e, _) => _ErrorView(
-        message: e.toString(),
-        onRetry: () => ref.invalidate(feedProvider(null)),
-      ),
+      error: (e, _) {
+        if (isLikelyCorsError(e)) {
+          final posts = sampleFeedPosts();
+          return Column(
+            children: [
+              Material(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 18, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'CORS blocked live API — sample feed. Use Android or Chrome with web security off.',
+                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.primary),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => ref.invalidate(feedProvider(null)),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                  itemCount: posts.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  itemBuilder: (context, i) => LiveFeedCard(post: posts[i], index: i),
+                ),
+              ),
+            ],
+          );
+        }
+        return _ErrorView(
+          message: e.toString(),
+          onRetry: () => ref.invalidate(feedProvider(null)),
+        );
+      },
       data: (posts) {
         if (posts.isEmpty) {
           return SsRefreshScroll(
