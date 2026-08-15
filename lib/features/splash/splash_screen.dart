@@ -40,31 +40,21 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
+    // Longer splash so every word is readable (~550ms each)
+    // Progress bar still eases; words advance on a linear clock.
     _progressCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3200),
+      duration: const Duration(milliseconds: 5200),
     );
     _progressAnim = CurvedAnimation(
       parent: _progressCtrl,
       curve: Curves.easeOutCubic,
     )..addListener(() {
-        final p = _progressAnim.value * 100;
-        final idx = math.min(
-          (p / 100 * _words.length).floor(),
-          _words.length - 1,
-        );
-        setState(() => _pct = p.round().clamp(0, 100));
-        if (p > 3 && idx != _wordIndex) {
-          setState(() => _wordVisible = false);
-          Future.delayed(const Duration(milliseconds: 150), () {
-            if (!mounted) return;
-            setState(() {
-              _wordIndex = idx;
-              _wordVisible = true;
-            });
-          });
-        }
+        setState(() => _pct = (_progressAnim.value * 100).round().clamp(0, 100));
       });
+
+    // Linear word cycle: equal time per word, independent of ease curve
+    _startWordCycle();
 
     _logoEnterCtrl = AnimationController(
       vsync: this,
@@ -129,12 +119,31 @@ class _SplashScreenState extends State<SplashScreen>
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _taglineCtrl.forward();
     });
-    Future.delayed(const Duration(milliseconds: 3600), () {
+    // Exit after all words + progress complete
+    Future.delayed(const Duration(milliseconds: 5600), () {
       if (mounted) _fadeOutCtrl.forward();
     });
-    Future.delayed(const Duration(milliseconds: 4200), () {
+    Future.delayed(const Duration(milliseconds: 6400), () {
       if (mounted) widget.onDone();
     });
+  }
+
+
+  /// Shows every word in order with equal dwell time (smooth, no skips).
+  void _startWordCycle() async {
+    const perWordMs = 520; // 9 words ≈ 4.7s, fits inside 5.2s progress
+    const fadeMs = 120;
+    for (var i = 0; i < _words.length; i++) {
+      if (!mounted) return;
+      setState(() => _wordVisible = false);
+      await Future.delayed(const Duration(milliseconds: fadeMs));
+      if (!mounted) return;
+      setState(() {
+        _wordIndex = i;
+        _wordVisible = true;
+      });
+      await Future.delayed(const Duration(milliseconds: perWordMs));
+    }
   }
 
   @override
