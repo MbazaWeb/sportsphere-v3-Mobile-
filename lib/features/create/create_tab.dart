@@ -1,24 +1,26 @@
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 
 /// Single Create composer popup — text + attach + poll + prediction.
-class CreateTab extends StatefulWidget {
+class CreateTab extends ConsumerStatefulWidget {
   const CreateTab({super.key, this.onNeedLogin});
 
   final VoidCallback? onNeedLogin;
 
   @override
-  State<CreateTab> createState() => _CreateTabState();
+  ConsumerState<CreateTab> createState() => _CreateTabState();
 }
 
 enum _Mode { post, poll, prediction }
 
-class _CreateTabState extends State<CreateTab> {
+class _CreateTabState extends ConsumerState<CreateTab> {
   final _text = TextEditingController();
   final _pollQ = TextEditingController();
   final _pollOpts = <TextEditingController>[
@@ -134,11 +136,79 @@ class _CreateTabState extends State<CreateTab> {
     });
   }
 
-  void _publish() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sign in to publish — login at the end')),
-    );
-    widget.onNeedLogin?.call();
+  bool _publishing = false;
+
+  Future<void> _publish() async {
+    final auth = ref.read(authProvider);
+    if (!auth.isAuthenticated) {
+      widget.onNeedLogin?.call();
+      return;
+    }
+
+    final content = (_mode == _Mode.poll ? _pollQ.text : _text.text).trim();
+    String postType = 'post';
+    Map<String, dynamic>? poll;
+    Map<String, dynamic>? prediction;
+
+    if (_mode == _Mode.poll) {
+      postType = 'poll';
+      final opts = _pollOpts.map((c) => c.text.trim()).where((o) => o.isNotEmpty).toList();
+      if (content.isEmpty || opts.length < 2) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Poll needs a question and at least 2 options')),
+        );
+        return;
+      }
+      poll = {'question': content, 'options': opts};
+    } else if (_mode == _Mode.prediction) {
+      postType = 'prediction';
+      if (_home.text.trim().isEmpty || _away.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enter both teams')),
+        );
+        return;
+      }
+      prediction = {
+        'homeTeam': _home.text.trim(),
+        'awayTeam': _away.text.trim(),
+        'predictedHome': int.tryParse(_hs.text) ?? 0,
+        'predictedAway': int.tryParse(_as.text) ?? 0,
+        'confidence': 'medium',
+      };
+      if (content.isEmpty) {
+        // API may require content for prediction
+      }
+    } else {
+      if (content.isEmpty && _files.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Write something or attach media')),
+        );
+        return;
+      }
+      if (_files.isNotEmpty) postType = 'photo';
+    }
+
+    setState(() => _publishing = true);
+    try {
+      // Media upload not wired yet — text/poll/prediction publish works
+      await ref.read(socialApiProvider).createPost(
+            content: content.isEmpty ? ' ' : content,
+            postType: postType,
+            poll: poll,
+            prediction: prediction,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Posted')),
+      );
+      Navigator.of(context).maybePop();
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().replaceFirst(RegExp(r'^ApiException\(\d+\):\s*'), '');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } finally {
+      if (mounted) setState(() => _publishing = false);
+    }
   }
 
   @override
@@ -168,7 +238,7 @@ class _CreateTabState extends State<CreateTab> {
                 ),
               ),
               TextButton(
-                onPressed: _publish,
+                onPressed: _publishing ? null : _publish,
                 child: Text(
                   'Post',
                   style: GoogleFonts.inter(color: AppColors.primary, fontWeight: FontWeight.w800),

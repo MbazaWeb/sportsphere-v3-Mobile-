@@ -189,11 +189,11 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget _buildTabContent(bool isAuthed) {
     switch (_current) {
       case AppTab.home:
-        return const HomeTab();
+        return HomeTab(onNeedLogin: _openLogin);
       case AppTab.scores:
         return const ScoresTab();
       case AppTab.create:
-        return const HomeTab();
+        return HomeTab(onNeedLogin: _openLogin);
       case AppTab.activity:
         return ActivityTab(onSignIn: _openLogin);
       case AppTab.profile:

@@ -100,18 +100,84 @@ class SportlightsTab extends ConsumerWidget {
   }
 }
 
-class LiveFeedCard extends StatelessWidget {
+class LiveFeedCard extends ConsumerStatefulWidget {
   const LiveFeedCard({super.key, required this.post, this.index = 0});
   final Post post;
   final int index;
 
   @override
+  ConsumerState<LiveFeedCard> createState() => _LiveFeedCardState();
+}
+
+class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
+  late int _likes;
+  late bool _liked;
+  late int _comments;
+
+  @override
+  void initState() {
+    super.initState();
+    _likes = widget.post.likeCount;
+    _liked = widget.post.likedByMe;
+    _comments = widget.post.commentCount;
+  }
+
+  Future<void> _toggleLike() async {
+    if (!ref.read(authProvider).isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to like')));
+      return;
+    }
+    try {
+      final r = await ref.read(socialApiProvider).toggleLike(widget.post.id);
+      if (!mounted) return;
+      setState(() {
+        _liked = r.liked;
+        _likes = r.likeCount;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  void _openComments() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundSecondary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _CommentsSheet(
+        postId: widget.post.id,
+        onCount: (n) {
+          if (mounted) setState(() => _comments = n);
+        },
+      ),
+    );
+  }
+
+  String _relTime(String iso) {
+    try {
+      final d = DateTime.parse(iso).toLocal();
+      final diff = DateTime.now().difference(d);
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${d.day}/${d.month}/${d.year}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final post = widget.post;
     final u = post.user;
     final time = _relTime(post.createdAt);
 
     return AnimatedGlassCard(
-      index: index,
+      index: widget.index,
       borderRadius: 20,
       padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
       child: Column(
@@ -144,11 +210,7 @@ class LiveFeedCard extends StatelessWidget {
                             ),
                             child: Text(
                               'VERIFIED',
-                              style: GoogleFonts.inter(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF22C55E),
-                              ),
+                              style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: const Color(0xFF22C55E)),
                             ),
                           ),
                         ],
@@ -196,31 +258,28 @@ class LiveFeedCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              _Act(Icons.favorite_border, '${post.likeCount}'),
+              GestureDetector(
+                onTap: _toggleLike,
+                child: _Act(
+                  _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  '$_likes',
+                  color: _liked ? const Color(0xFFF43F5E) : null,
+                ),
+              ),
               const SizedBox(width: 16),
-              _Act(Icons.chat_bubble_outline, '${post.commentCount}'),
+              GestureDetector(
+                onTap: _openComments,
+                child: _Act(Icons.chat_bubble_outline_rounded, '$_comments'),
+              ),
               const SizedBox(width: 16),
               _Act(Icons.ios_share_outlined, '${post.shareCount}'),
               const Spacer(),
-              const Icon(Icons.bookmark_border, size: 18, color: AppColors.mutedForeground),
+              Icon(Icons.bookmark_border_rounded, size: 18, color: AppColors.mutedForeground.withValues(alpha: 0.85)),
             ],
           ),
         ],
       ),
     );
-  }
-
-  String _relTime(String iso) {
-    try {
-      final d = DateTime.parse(iso).toLocal();
-      final diff = DateTime.now().difference(d);
-      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-      if (diff.inHours < 24) return '${diff.inHours}h ago';
-      if (diff.inDays < 7) return '${diff.inDays}d ago';
-      return '${d.day}/${d.month}/${d.year}';
-    } catch (_) {
-      return '';
-    }
   }
 }
 
@@ -325,15 +384,17 @@ class _PredictionBlock extends StatelessWidget {
 }
 
 class _Act extends StatelessWidget {
-  const _Act(this.icon, this.label);
+  const _Act(this.icon, this.label, {this.color});
   final IconData icon;
   final String label;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final c = color ?? AppColors.mutedForeground.withValues(alpha: 0.9);
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.mutedForeground.withValues(alpha: 0.9)),
+        Icon(icon, size: 20, color: c),
         const SizedBox(width: 5),
         Text(
           label,
@@ -341,13 +402,133 @@ class _Act extends StatelessWidget {
             fontSize: 13,
             fontWeight: FontWeight.w500,
             letterSpacing: -0.1,
-            color: AppColors.mutedForeground,
+            color: color ?? AppColors.mutedForeground,
           ),
         ),
       ],
     );
   }
 }
+
+class _CommentsSheet extends ConsumerStatefulWidget {
+  const _CommentsSheet({required this.postId, required this.onCount});
+  final String postId;
+  final ValueChanged<int> onCount;
+
+  @override
+  ConsumerState<_CommentsSheet> createState() => _CommentsSheetState();
+}
+
+class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
+  final _ctrl = TextEditingController();
+  List<Map<String, dynamic>> _items = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final list = await ref.read(socialApiProvider).getComments(widget.postId);
+      if (!mounted) return;
+      setState(() {
+        _items = list;
+        _loading = false;
+      });
+      widget.onCount(list.length);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _send() async {
+    final text = _ctrl.text.trim();
+    if (text.isEmpty) return;
+    final auth = ref.read(authProvider);
+    if (!auth.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to comment')));
+      return;
+    }
+    try {
+      await ref.read(socialApiProvider).addComment(postId: widget.postId, content: text);
+      _ctrl.clear();
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.55,
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4))),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('Comments', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18)),
+            ),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))
+                  : _items.isEmpty
+                      ? Center(child: Text('No comments yet', style: GoogleFonts.inter(color: AppColors.mutedForeground)))
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _items.length,
+                          itemBuilder: (context, i) {
+                            final c = _items[i];
+                            final user = c['user'] is Map ? Map<String, dynamic>.from(c['user'] as Map) : {};
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(user['name']?.toString() ?? 'User', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13)),
+                              subtitle: Text(c['content']?.toString() ?? '', style: GoogleFonts.inter(fontSize: 14)),
+                            );
+                          },
+                        ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _ctrl,
+                      decoration: InputDecoration(
+                        hintText: 'Add a comment…',
+                        isDense: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(onPressed: _send, icon: const Icon(Icons.send_rounded, color: AppColors.primary)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.message, required this.onRetry});

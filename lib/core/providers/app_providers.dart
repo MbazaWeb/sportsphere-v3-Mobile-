@@ -3,6 +3,7 @@ import '../network/api_client.dart';
 import '../storage/token_storage.dart';
 import '../../features/auth/data/auth_api.dart';
 import '../../features/home/data/feed_api.dart';
+import '../../features/social/data/social_api.dart';
 import '../../shared/models/user_profile.dart';
 import '../../shared/models/post.dart';
 import '../../shared/models/match.dart';
@@ -26,6 +27,7 @@ final matchesApiProvider = Provider((ref) => MatchesApi(ref.watch(apiClientProvi
 final standingsApiProvider = Provider((ref) => StandingsApi(ref.watch(apiClientProvider)));
 final pollsApiProvider = Provider((ref) => PollsApi(ref.watch(apiClientProvider)));
 final predictionsApiProvider = Provider((ref) => PredictionsApi(ref.watch(apiClientProvider)));
+final socialApiProvider = Provider((ref) => SocialApi(ref.watch(apiClientProvider)));
 
 class AuthState {
   const AuthState({
