@@ -230,12 +230,40 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
                             ],
                           ),
                           const SizedBox(height: 16),
+                          SizedBox(
+                            height: 40,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: cfg.tabs.take(8).length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 6),
+                              itemBuilder: (context, i) {
+                                final tab = cfg.tabs[i];
+                                final active = i == 0;
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: active ? AppColors.primary : AppColors.surface,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    tab.label,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: active ? AppColors.primaryForeground : AppColors.mutedForeground,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
                           GlassCard(
                             borderRadius: 14,
                             padding: const EdgeInsets.all(14),
                             child: Text(
-                              '${cfg.emoji} ${cfg.label} profile · ${cfg.tabs.length} sections in full profile layout',
-                              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground),
+                              '${cfg.emoji} ${cfg.label} · Overview matches web entity profile. Full tab content uses profile-data when available.',
+                              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground, height: 1.4),
                             ),
                           ),
                         ],

@@ -4,6 +4,7 @@ import '../storage/token_storage.dart';
 import '../../features/auth/data/auth_api.dart';
 import '../../features/home/data/feed_api.dart';
 import '../../features/social/data/social_api.dart';
+import '../../features/communities/data/communities_api.dart';
 import '../../features/messages/data/messages_api.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/data/roles_api.dart';
@@ -33,6 +34,10 @@ final standingsApiProvider = Provider((ref) => StandingsApi(ref.watch(apiClientP
 final pollsApiProvider = Provider((ref) => PollsApi(ref.watch(apiClientProvider)));
 final predictionsApiProvider = Provider((ref) => PredictionsApi(ref.watch(apiClientProvider)));
 final socialApiProvider = Provider((ref) => SocialApi(ref.watch(apiClientProvider)));
+final communitiesApiProvider = Provider((ref) => CommunitiesApi(ref.watch(apiClientProvider)));
+final communitiesProvider = FutureProvider<List<CommunityItem>>((ref) {
+  return ref.watch(communitiesApiProvider).list();
+});
 final messagesApiProvider = Provider((ref) => MessagesApi(ref.watch(apiClientProvider)));
 final profileApiProvider = Provider((ref) => ProfileApi(ref.watch(apiClientProvider)));
 final rolesApiProvider = Provider((ref) => RolesApi(ref.watch(apiClientProvider)));
