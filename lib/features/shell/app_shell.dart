@@ -18,7 +18,6 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   AppTab _current = AppTab.home;
-  bool _navVisible = true;
   bool _isAuthenticated = false;
   bool _showLogin = false;
   bool _showRegister = false;
@@ -45,6 +44,55 @@ class _AppShellState extends State<AppShell> {
         _current = AppTab.profile;
       });
 
+  void _openCreateSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+          child: DraggableScrollableSheet(
+            initialChildSize: 0.88,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.backgroundSecondary,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    Expanded(
+                      child: CreateTab(
+                        onNeedLogin: () {
+                          Navigator.of(context).pop();
+                          _openLogin();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,11 +117,14 @@ class _AppShellState extends State<AppShell> {
             right: 0,
             bottom: 0,
             child: BottomNav(
-              currentTab: _current,
+              currentTab: _current == AppTab.create ? AppTab.home : _current,
               isAuthenticated: _isAuthenticated,
-              visible: _navVisible,
+              visible: true,
               onTabSelected: (tab) {
-                // Allow browsing all tabs; create/activity/profile show guest-friendly UI
+                if (tab == AppTab.create) {
+                  _openCreateSheet();
+                  return;
+                }
                 setState(() => _current = tab);
               },
               onLoginTap: _openLogin,
@@ -86,7 +137,7 @@ class _AppShellState extends State<AppShell> {
               onOpenRegister: _openRegister,
               onOpenForgot: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Forgot password — wire with login')),
+                  const SnackBar(content: Text('Forgot password — with login phase')),
                 );
               },
             ),
@@ -108,7 +159,7 @@ class _AppShellState extends State<AppShell> {
       case AppTab.scores:
         return const ScoresTab();
       case AppTab.create:
-        return CreateTab(onNeedLogin: _openLogin);
+        return const HomeTab(); // sheet handles create
       case AppTab.activity:
         return ActivityTab(onSignIn: _openLogin);
       case AppTab.profile:
