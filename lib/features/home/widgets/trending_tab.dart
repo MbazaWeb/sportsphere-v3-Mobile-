@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
 import 'sportlights_tab.dart';
+import '../../../shared/widgets/ss_refresh.dart';
 
 class TrendingTab extends ConsumerWidget {
   const TrendingTab({super.key});
@@ -26,11 +27,15 @@ class TrendingTab extends ConsumerWidget {
             child: Text('No trending posts', style: GoogleFonts.inter(color: AppColors.mutedForeground)),
           );
         }
-        return RefreshIndicator(
-          color: AppColors.primary,
-          backgroundColor: AppColors.backgroundSecondary,
-          onRefresh: () async => ref.invalidate(feedProvider('trending')),
+        return SsRefresh(
+          onRefresh: () async {
+            ref.invalidate(feedProvider('trending'));
+            await ref.read(feedProvider('trending').future);
+          },
           child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
             itemCount: posts.length + 1,
             separatorBuilder: (_, __) => const SizedBox(height: 12),

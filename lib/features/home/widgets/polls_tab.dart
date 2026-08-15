@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
 import 'sportlights_tab.dart';
+import '../../../shared/widgets/ss_refresh.dart';
 
 class PollsTab extends ConsumerWidget {
   const PollsTab({super.key});
@@ -50,11 +51,20 @@ class PollsTab extends ConsumerWidget {
                   child: Text('No polls yet', style: GoogleFonts.inter(color: AppColors.mutedForeground)),
                 );
               }
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                itemCount: polls.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (_, i) => LiveFeedCard(post: polls[i]),
+              return SsRefresh(
+                onRefresh: () async {
+                  ref.invalidate(feedProvider(null));
+                  await ref.read(feedProvider(null).future);
+                },
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                  itemCount: polls.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) => LiveFeedCard(post: polls[i]),
+                ),
               );
             },
           ),

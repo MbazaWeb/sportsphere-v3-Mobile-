@@ -5,6 +5,7 @@ import '../../core/providers/app_providers.dart';
 import '../../shared/models/match.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
+import '../../shared/widgets/ss_refresh.dart';
 
 /// Scores tab — live matches + standings from API
 class ScoresTab extends ConsumerStatefulWidget {
@@ -144,28 +145,40 @@ class _MatchesView extends ConsumerWidget {
       ),
       data: (matches) {
         if (matches.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.sports_soccer, size: 48, color: AppColors.mutedForeground.withValues(alpha: 0.5)),
-                  const SizedBox(height: 12),
-                  Text(
-                    status == 'live' ? 'No live matches right now' : 'No matches found',
-                    style: GoogleFonts.inter(color: AppColors.mutedForeground),
-                  ),
-                ],
+          return SsRefreshScroll(
+            onRefresh: () async {
+              ref.invalidate(matchesProvider(status));
+              await ref.read(matchesProvider(status).future);
+            },
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.sports_soccer, size: 48, color: AppColors.mutedForeground.withValues(alpha: 0.5)),
+                    const SizedBox(height: 12),
+                    Text(
+                      status == 'live' ? 'No live matches right now' : 'No matches found',
+                      style: GoogleFonts.inter(color: AppColors.mutedForeground),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Pull to refresh', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
+                  ],
+                ),
               ),
             ),
           );
         }
-        return RefreshIndicator(
-          color: AppColors.primary,
-          backgroundColor: AppColors.backgroundSecondary,
-          onRefresh: () async => ref.invalidate(matchesProvider(status)),
+        return SsRefresh(
+          onRefresh: () async {
+            ref.invalidate(matchesProvider(status));
+            await ref.read(matchesProvider(status).future);
+          },
           child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
             itemCount: matches.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -258,11 +271,15 @@ class _StandingsView extends ConsumerWidget {
       error: (e, _) => Center(child: TextButton(onPressed: () => ref.invalidate(standingsProvider), child: const Text('Retry'))),
       data: (data) {
         final rows = data.rows;
-        return RefreshIndicator(
-          color: AppColors.primary,
-          backgroundColor: AppColors.backgroundSecondary,
-          onRefresh: () async => ref.invalidate(standingsProvider),
+        return SsRefresh(
+          onRefresh: () async {
+            ref.invalidate(standingsProvider);
+            await ref.read(standingsProvider.future);
+          },
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
             children: [
               Text(data.league, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800)),

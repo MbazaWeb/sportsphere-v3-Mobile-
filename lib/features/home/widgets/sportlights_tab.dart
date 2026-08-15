@@ -5,6 +5,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../shared/models/post.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
+import '../../../shared/widgets/ss_refresh.dart';
 
 /// Live Sportlights feed from GET /api/feed
 class SportlightsTab extends ConsumerWidget {
@@ -27,18 +28,28 @@ class SportlightsTab extends ConsumerWidget {
       ),
       data: (posts) {
         if (posts.isEmpty) {
-          return Center(
-            child: Text(
-              'No posts yet',
-              style: GoogleFonts.inter(color: AppColors.mutedForeground),
+          return SsRefreshScroll(
+            onRefresh: () async {
+              ref.invalidate(feedProvider(null));
+              await ref.read(feedProvider(null).future);
+            },
+            child: Center(
+              child: Text(
+                'No posts yet — pull to refresh',
+                style: GoogleFonts.inter(color: AppColors.mutedForeground),
+              ),
             ),
           );
         }
-        return RefreshIndicator(
-          color: AppColors.primary,
-          backgroundColor: AppColors.backgroundSecondary,
-          onRefresh: () async => ref.invalidate(feedProvider(null)),
+        return SsRefresh(
+          onRefresh: () async {
+            ref.invalidate(feedProvider(null));
+            await ref.read(feedProvider(null).future);
+          },
           child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
             itemCount: posts.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),

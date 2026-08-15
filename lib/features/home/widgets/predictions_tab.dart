@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
 import 'sportlights_tab.dart';
+import '../../../shared/widgets/ss_refresh.dart';
 
 class PredictionsTab extends ConsumerWidget {
   const PredictionsTab({super.key});
@@ -51,11 +52,20 @@ class PredictionsTab extends ConsumerWidget {
                   child: Text('No predictions yet', style: GoogleFonts.inter(color: AppColors.mutedForeground)),
                 );
               }
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                itemCount: preds.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (_, i) => LiveFeedCard(post: preds[i]),
+              return SsRefresh(
+                onRefresh: () async {
+                  ref.invalidate(feedProvider(null));
+                  await ref.read(feedProvider(null).future);
+                },
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                  itemCount: preds.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) => LiveFeedCard(post: preds[i]),
+                ),
               );
             },
           ),
