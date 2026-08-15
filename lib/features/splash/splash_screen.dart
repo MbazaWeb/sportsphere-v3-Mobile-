@@ -2,13 +2,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../theme/app_colors.dart';
 
 /// 1:1 port of `src/components/SplashScreen.tsx`
-/// Timing: progress 3200ms ease-out-cubic, fade 3600ms, onDone 4200ms
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, required this.onDone});
-
   final VoidCallback onDone;
 
   @override
@@ -17,8 +14,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  // Exact words from source
-  static const _loadingWords = [
+  static const _words = [
     'Player',
     'Sport',
     'Game',
@@ -38,82 +34,83 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _taglineCtrl;
   late final AnimationController _logoEnterCtrl;
 
-  late final Animation<double> _progressAnim; // 0..100 style via value*100
+  late final Animation<double> _progressAnim;
   late final Animation<double> _logoOpacity;
   late final Animation<double> _logoScale;
-  late final Animation<Offset> _logoOffset;
+  late final Animation<double> _logoDy;
 
   int _wordIndex = -1;
   bool _wordVisible = false;
-  bool _logoError = false;
+  double _progressPct = 0;
 
   @override
   void initState() {
     super.initState();
 
-    // Progress: 3200ms, ease-out cubic: 1-(1-t)^3  → matches source
+    // Source: duration 3200, interval 30, ease 1-(1-t)^3
     _progressCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3200),
     );
-    _progressAnim = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _progressCtrl, curve: Curves.easeOutCubic),
-    )..addListener(_onProgress);
+    _progressAnim = CurvedAnimation(
+      parent: _progressCtrl,
+      curve: Curves.easeOutCubic,
+    )..addListener(() {
+        final p = _progressAnim.value * 100;
+        final idx = math.min(
+          (p / 100 * _words.length).floor(),
+          _words.length - 1,
+        );
+        setState(() => _progressPct = p);
+        if (p > 3 && idx != _wordIndex) {
+          setState(() => _wordVisible = false);
+          Future.delayed(const Duration(milliseconds: 150), () {
+            if (!mounted) return;
+            setState(() {
+              _wordIndex = idx;
+              _wordVisible = true;
+            });
+          });
+        }
+      });
 
-    // Logo enter: 0.8s ease-out — scale 0.8→1.02→1, opacity 0→1, y 20→-2→0
+    // logoEnter 0.8s
     _logoEnterCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
     _logoOpacity = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _logoEnterCtrl, curve: const Interval(0, 0.7)),
+      CurvedAnimation(parent: _logoEnterCtrl, curve: const Interval(0, 0.75)),
     );
     _logoScale = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween(begin: 0.8, end: 1.02).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 60,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: 1.02, end: 1.0).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 40,
-      ),
-    ]).animate(_logoEnterCtrl);
-    _logoOffset = TweenSequence<Offset>([
-      TweenSequenceItem(
-        tween: Tween(begin: const Offset(0, 20), end: const Offset(0, -2)),
-        weight: 60,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: const Offset(0, -2), end: Offset.zero),
-        weight: 40,
-      ),
-    ]).animate(_logoEnterCtrl);
+      TweenSequenceItem(tween: Tween(begin: 0.8, end: 1.02), weight: 60),
+      TweenSequenceItem(tween: Tween(begin: 1.02, end: 1.0), weight: 40),
+    ]).animate(CurvedAnimation(parent: _logoEnterCtrl, curve: Curves.easeOut));
+    _logoDy = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 20.0, end: -2.0), weight: 60),
+      TweenSequenceItem(tween: Tween(begin: -2.0, end: 0.0), weight: 40),
+    ]).animate(CurvedAnimation(parent: _logoEnterCtrl, curve: Curves.easeOut));
 
-    // Spinner continuous
     _spinCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..repeat();
 
-    // Shimmer on progress bar
     _shimmerCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat();
 
-    // Word glow pulse
     _wordGlowCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
 
-    // Tagline fade: 0.8s ease-out, delay 0.5s
     _taglineCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
 
-    // Exit: opacity 0 + scale 1.05 over 600ms starting at 3600ms; onDone at 4200ms
     _fadeOutCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -132,28 +129,6 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
-  void _onProgress() {
-    final progress = _progressAnim.value * 100;
-    final idx = math.min(
-      (progress / 100 * _loadingWords.length).floor(),
-      _loadingWords.length - 1,
-    );
-    if (progress > 3 && idx != _wordIndex) {
-      setState(() => _wordVisible = false);
-      Future.delayed(const Duration(milliseconds: 150), () {
-        if (mounted) {
-          setState(() {
-            _wordIndex = idx;
-            _wordVisible = true;
-          });
-        }
-      });
-    } else {
-      // rebuild for progress % text
-      setState(() {});
-    }
-  }
-
   @override
   void dispose() {
     _progressCtrl.dispose();
@@ -169,7 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    final progressPct = (_progressAnim.value * 100).round().clamp(0, 100);
+    final pct = _progressPct.round().clamp(0, 100);
 
     return AnimatedBuilder(
       animation: Listenable.merge([
@@ -183,17 +158,13 @@ class _SplashScreenState extends State<SplashScreen>
       ]),
       builder: (context, _) {
         final exitT = _fadeOutCtrl.value;
-        final opacity = 1.0 - exitT;
-        final scale = 1.0 + (exitT * 0.05);
-
         return Opacity(
-          opacity: opacity,
+          opacity: 1.0 - exitT,
           child: Transform.scale(
-            scale: scale,
+            scale: 1.0 + exitT * 0.05,
             child: Container(
               width: double.infinity,
               height: double.infinity,
-              // radial-gradient(ellipse at 50% 40%, #0f1d3a 0%, #0a1628 50%, #030812 100%)
               decoration: const BoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment(0, -0.2),
@@ -208,7 +179,7 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               child: Stack(
                 children: [
-                  // Ambient orb gold — top 15% left 10%, 200px
+                  // Ambient gold orb
                   Positioned(
                     top: size.height * 0.15,
                     left: size.width * 0.10,
@@ -227,7 +198,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                   ),
-                  // Ambient orb sky — bottom 20% right 8%, 160px (source uses sky blue 56,189,248)
+                  // Ambient sky orb
                   Positioned(
                     bottom: size.height * 0.20,
                     right: size.width * 0.08,
@@ -247,7 +218,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  // Watermark S — 35vw, weight 900, gold 3% opacity, italic
+                  // Watermark S
                   Positioned.fill(
                     child: IgnorePointer(
                       child: Center(
@@ -266,182 +237,157 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  // Main column
+                  // Content column — matches web flex center layout
                   SafeArea(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Spacer(flex: 3),
-
-                        // Logo — max width 240, logoEnter animation
+                        // Logo
                         Opacity(
                           opacity: _logoOpacity.value,
                           child: Transform.translate(
-                            offset: _logoOffset.value,
+                            offset: Offset(0, _logoDy.value),
                             child: Transform.scale(
                               scale: _logoScale.value,
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 240),
-                                child: Padding(
-                                  padding: EdgeInsets.only(bottom: size.height * 0.025),
-                                  child: _logoError
-                                      ? _FallbackS()
-                                      : SvgPicture.asset(
-                                          'assets/images/logo.svg',
-                                          width: 240,
-                                          fit: BoxFit.contain,
-                                          placeholderBuilder: (_) => _FallbackS(),
-                                          // If SVG fails to parse, show fallback
-                                          // (flutter_svg throws; we catch via errorBuilder pattern)
-                                        ),
+                              child: SizedBox(
+                                width: math.min(240.0, size.width * 0.55),
+                                child: SvgPicture.asset(
+                                  'assets/images/logo.svg',
+                                  fit: BoxFit.contain,
+                                  placeholderBuilder: (_) => const _FallbackS(),
                                 ),
                               ),
                             ),
                           ),
                         ),
 
-                        // Animated word — height 10vh
+                        // Word area — source: height 10vh, marginBottom 3vh
+                        // CRITICAL: text is WHITE, no background, no solid bar
+                        SizedBox(height: size.height * 0.025),
                         SizedBox(
-                          height: size.height * 0.10,
+                          height: size.height * 0.08,
                           child: Center(
-                            child: _wordIndex >= 0
-                                ? AnimatedOpacity(
+                            child: _wordIndex < 0
+                                ? const SizedBox.shrink()
+                                : AnimatedOpacity(
                                     duration: const Duration(milliseconds: 300),
-                                    opacity: _wordVisible ? 1 : 0,
-                                    child: AnimatedScale(
+                                    curve: Curves.easeOut,
+                                    opacity: _wordVisible ? 1.0 : 0.0,
+                                    child: AnimatedSlide(
                                       duration: const Duration(milliseconds: 300),
-                                      scale: _wordVisible ? 1 : 0.95,
-                                      child: AnimatedSlide(
-                                        duration: const Duration(milliseconds: 300),
-                                        offset: _wordVisible
-                                            ? Offset.zero
-                                            : const Offset(0, 0.15),
-                                        child: Text(
-                                          _loadingWords[_wordIndex].toUpperCase(),
-                                          textAlign: TextAlign.center,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: (size.width * 0.055)
-                                                .clamp(25.6, 44.8),
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: 4,
-                                            color: Colors.white,
-                                            shadows: [
-                                              Shadow(
-                                                color: const Color(0xFFF5C518)
-                                                    .withValues(
-                                                  alpha: 0.2 +
-                                                      (_wordGlowCtrl.value * 0.3),
-                                                ),
-                                                blurRadius:
-                                                    20 + (_wordGlowCtrl.value * 20),
+                                      curve: Curves.easeOut,
+                                      offset: _wordVisible
+                                          ? Offset.zero
+                                          : const Offset(0, 0.2),
+                                      child: Text(
+                                        _words[_wordIndex].toUpperCase(),
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: (size.width * 0.055)
+                                              .clamp(22.0, 40.0),
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 4,
+                                          color: Colors.white,
+                                          decoration: TextDecoration.none,
+                                          shadows: [
+                                            Shadow(
+                                              color: Color.fromRGBO(
+                                                245,
+                                                197,
+                                                24,
+                                                0.2 +
+                                                    0.3 * _wordGlowCtrl.value,
                                               ),
-                                              Shadow(
-                                                color: const Color(0xFFF5C518)
-                                                    .withValues(
-                                                  alpha: 0.05 +
-                                                      (_wordGlowCtrl.value * 0.1),
-                                                ),
-                                                blurRadius:
-                                                    40 + (_wordGlowCtrl.value * 40),
-                                              ),
-                                            ],
-                                          ),
+                                              blurRadius:
+                                                  20 + 20 * _wordGlowCtrl.value,
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
-                                  )
-                                : const SizedBox.shrink(),
+                                  ),
                           ),
                         ),
+                        SizedBox(height: size.height * 0.02),
 
-                        SizedBox(height: size.height * 0.03),
-
-                        // Progress block — width 75%, max 280
+                        // Progress block — width 75% max 280
                         SizedBox(
                           width: math.min(size.width * 0.75, 280),
                           child: Column(
                             children: [
-                              // Spinner 28x28
-                              RotationTransition(
-                                turns: _spinCtrl,
-                                child: Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.08),
-                                      width: 2.5,
-                                    ),
-                                  ),
+                              // Spinner 28×28
+                              SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: RotationTransition(
+                                  turns: _spinCtrl,
                                   child: CustomPaint(
-                                    painter: _SpinnerArcPainter(
-                                      color: const Color(0xFFF5C518),
-                                      strokeWidth: 2.5,
-                                    ),
+                                    painter: _SpinnerPainter(),
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 12),
 
-                              // Progress bar height 4, track rgba(255,255,255,0.06)
+                              // Thin progress track (height 4) — match web
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(4),
                                 child: SizedBox(
                                   height: 4,
                                   width: double.infinity,
                                   child: Stack(
+                                    fit: StackFit.expand,
                                     children: [
-                                      Container(
+                                      // Track
+                                      ColoredBox(
                                         color: Colors.white.withValues(alpha: 0.06),
                                       ),
-                                      FractionallySizedBox(
-                                        widthFactor: _progressAnim.value.clamp(0.0, 1.0),
-                                        child: AnimatedBuilder(
-                                          animation: _shimmerCtrl,
-                                          builder: (context, _) {
-                                            return Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(4),
-                                                gradient: LinearGradient(
-                                                  begin: Alignment(
-                                                    -1.0 + 2.0 * _shimmerCtrl.value,
-                                                    0,
+                                      // Fill with shimmer gradient
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: FractionallySizedBox(
+                                          widthFactor:
+                                              _progressAnim.value.clamp(0.0, 1.0),
+                                          heightFactor: 1,
+                                          child: AnimatedBuilder(
+                                            animation: _shimmerCtrl,
+                                            builder: (_, __) {
+                                              // shimmer shifts background-position
+                                              final t = _shimmerCtrl.value;
+                                              return DecoratedBox(
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment(-1 + 2 * t, 0),
+                                                    end: Alignment(1 + 2 * t, 0),
+                                                    colors: const [
+                                                      Color(0xFFF5C518),
+                                                      Color(0xFFFFD700),
+                                                      Color(0xFFFFFFFF),
+                                                      Color(0xFFFFD700),
+                                                      Color(0xFFF5C518),
+                                                    ],
                                                   ),
-                                                  end: Alignment(
-                                                    1.0 + 2.0 * _shimmerCtrl.value,
-                                                    0,
-                                                  ),
-                                                  colors: const [
-                                                    Color(0xFFF5C518),
-                                                    Color(0xFFFFD700),
-                                                    Colors.white,
-                                                    Color(0xFFFFD700),
-                                                    Color(0xFFF5C518),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Color.fromRGBO(
+                                                        245,
+                                                        197,
+                                                        24,
+                                                        0.35 +
+                                                            0.25 *
+                                                                math.sin(t *
+                                                                    math.pi *
+                                                                    2)
+                                                                    .abs(),
+                                                      ),
+                                                      blurRadius: 8,
+                                                    ),
                                                   ],
-                                                  stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
                                                 ),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: const Color(0xFFF5C518)
-                                                        .withValues(alpha: 0.3 +
-                                                            0.3 *
-                                                                math.sin(
-                                                                  _shimmerCtrl.value *
-                                                                      math.pi *
-                                                                      2,
-                                                                ).abs()),
-                                                    blurRadius: 6 +
-                                                        10 *
-                                                            math.sin(
-                                                              _shimmerCtrl.value *
-                                                                  math.pi *
-                                                                  2,
-                                                            ).abs(),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
+                                              );
+                                            },
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -450,30 +396,33 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
                               const SizedBox(height: 12),
 
-                              // Loading ........ %
+                              // LOADING ........ %
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'LOADING',
                                     style: GoogleFonts.inter(
-                                      fontSize: 11.2, // 0.7rem
+                                      fontSize: 11.2,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 2,
-                                      color: Colors.white.withValues(alpha: 0.4),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.4),
+                                      decoration: TextDecoration.none,
                                     ),
                                   ),
                                   Text(
-                                    '$progressPct%',
+                                    '$pct%',
                                     style: GoogleFonts.inter(
-                                      fontSize: 15.2, // 0.95rem
+                                      fontSize: 15.2,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 1,
                                       color: const Color(0xFFF5C518),
-                                      shadows: [
+                                      decoration: TextDecoration.none,
+                                      shadows: const [
                                         Shadow(
-                                          color: const Color(0xFFF5C518)
-                                              .withValues(alpha: 0.4),
+                                          color: Color(0x66F5C518),
                                           blurRadius: 12,
                                         ),
                                       ],
@@ -485,21 +434,23 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ),
 
-                        const Spacer(flex: 2),
+                        // Push footer space — web uses absolute footer
+                        SizedBox(height: size.height * 0.12),
                       ],
                     ),
                   ),
 
-                  // Footer — bottom safe + 3vh
+                  // Footer absolute
                   Positioned(
                     left: 0,
                     right: 0,
-                    bottom: MediaQuery.paddingOf(context).bottom + size.height * 0.03,
+                    bottom: MediaQuery.paddingOf(context).bottom +
+                        size.height * 0.03,
                     child: FadeTransition(
                       opacity: _taglineCtrl,
                       child: SlideTransition(
                         position: Tween<Offset>(
-                          begin: const Offset(0, 0.15),
+                          begin: const Offset(0, 0.2),
                           end: Offset.zero,
                         ).animate(CurvedAnimation(
                           parent: _taglineCtrl,
@@ -510,10 +461,11 @@ class _SplashScreenState extends State<SplashScreen>
                             Text.rich(
                               TextSpan(
                                 style: GoogleFonts.inter(
-                                  fontSize: 17.6, // 1.1rem
+                                  fontSize: 17.6,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 5,
                                   color: Colors.white.withValues(alpha: 0.9),
+                                  decoration: TextDecoration.none,
                                 ),
                                 children: const [
                                   TextSpan(text: 'LIVE. '),
@@ -530,10 +482,11 @@ class _SplashScreenState extends State<SplashScreen>
                             Text(
                               '© ${DateTime.now().year} MbazzaCodes Inc.',
                               style: GoogleFonts.inter(
-                                fontSize: 10.4, // 0.65rem
+                                fontSize: 10.4,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: 1,
                                 color: Colors.white.withValues(alpha: 0.35),
+                                decoration: TextDecoration.none,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -553,6 +506,7 @@ class _SplashScreenState extends State<SplashScreen>
 }
 
 class _FallbackS extends StatelessWidget {
+  const _FallbackS();
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -561,8 +515,6 @@ class _FallbackS extends StatelessWidget {
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
           colors: [Color(0xFFF5C518), Color(0xFFFFD700)],
         ),
       ),
@@ -574,34 +526,41 @@ class _FallbackS extends StatelessWidget {
           fontWeight: FontWeight.w900,
           fontStyle: FontStyle.italic,
           color: Color(0xFF030812),
+          decoration: TextDecoration.none,
         ),
       ),
     );
   }
 }
 
-/// Top arc only — mimics border-top gold spinner
-class _SpinnerArcPainter extends CustomPainter {
-  _SpinnerArcPainter({required this.color, required this.strokeWidth});
-
-  final Color color;
-  final double strokeWidth;
-
+class _SpinnerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-    final rect = Offset.zero & size;
-    // Draw ~90° arc at top
+    final stroke = 2.5;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.shortestSide - stroke) / 2;
+
+    // Track ring
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.08)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke,
+    );
+
+    // Gold arc (top portion)
     canvas.drawArc(
-      rect.deflate(strokeWidth / 2),
-      -math.pi / 2 - 0.3,
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2 - 0.2,
       math.pi * 0.55,
       false,
-      paint,
+      Paint()
+        ..color = const Color(0xFFF5C518)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round,
     );
   }
 
