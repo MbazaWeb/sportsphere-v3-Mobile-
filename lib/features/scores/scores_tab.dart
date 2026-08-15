@@ -235,6 +235,18 @@ class _MatchCard extends StatelessWidget {
   const _MatchCard({required this.m});
   final MatchItem m;
 
+  void _openDetail(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.backgroundSecondary,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => _MatchDetailSheet(m: m),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final score = m.isFinished || m.isLive
@@ -249,6 +261,7 @@ class _MatchCard extends StatelessWidget {
     return GlassCard(
       borderRadius: 14,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      onTap: () => _openDetail(context),
       child: Column(
         children: [
           Row(
@@ -403,6 +416,100 @@ class _StandingRowWidget extends StatelessWidget {
             width: 36,
             child: Text('${r.pts}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.primary)),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MatchDetailSheet extends StatelessWidget {
+  const _MatchDetailSheet({required this.m});
+  final MatchItem m;
+
+  @override
+  Widget build(BuildContext context) {
+    final score = m.isFinished || m.isLive
+        ? '${m.homeScore ?? 0}  -  ${m.awayScore ?? 0}'
+        : 'vs';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (m.league != null)
+            Text(
+              m.league!,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.mutedForeground,
+              ),
+            ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  m.homeTeam,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+              ),
+              Text(
+                score,
+                style: GoogleFonts.outfit(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: m.isLive ? AppColors.primary : AppColors.foreground,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  m.awayTeam,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: m.isLive
+                  ? AppColors.primary.withValues(alpha: 0.15)
+                  : AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              m.isLive
+                  ? (m.minute != null ? "LIVE · ${m.minute}'" : 'LIVE')
+                  : m.isFinished
+                      ? 'Full time'
+                      : (m.kickoff ?? m.status),
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: m.isLive ? AppColors.primary : AppColors.mutedForeground,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Events & lineups load when available from the API.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
