@@ -7,6 +7,8 @@ import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
 import 'edit_profile_sheet.dart';
 import 'role_upgrade_sheet.dart';
+import 'sports_interests_sheet.dart';
+import 'notif_prefs_sheet.dart';
 
 /// Settings — mirrors web SettingsSection groups.
 class SettingsSheet extends ConsumerWidget {
@@ -85,8 +87,11 @@ class SettingsSheet extends ConsumerWidget {
                         );
                       }),
                       _tile(Icons.favorite_border, 'Sports & Interests', () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Sports preferences — edit via profile')),
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const SportsInterestsSheet(),
                         );
                       }),
                     ],
@@ -101,8 +106,11 @@ class SettingsSheet extends ConsumerWidget {
                     children: [
                       const _BiometricSettingsTile(),
                       _tile(Icons.notifications_none, 'Notifications', () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Notification prefs sync with account')),
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const NotifPrefsSheet(),
                         );
                       }),
                       _tile(Icons.palette_outlined, 'Appearance', () {

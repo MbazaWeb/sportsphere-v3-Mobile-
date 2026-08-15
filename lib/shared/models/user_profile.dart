@@ -27,6 +27,7 @@ class UserProfile {
     this.nationality,
     this.aboutMe,
     this.interests = const [],
+    this.notifPrefs = const {},
     this.website,
     this.coverGradient,
     this.coverUrl,
@@ -62,6 +63,7 @@ class UserProfile {
   final String? nationality;
   final String? aboutMe;
   final List<String> interests;
+  final Map<String, bool> notifPrefs;
   final String? website;
   final String? coverGradient;
   final String? coverUrl;
@@ -97,6 +99,13 @@ class UserProfile {
       nationality: j['nationality']?.toString(),
       aboutMe: j['aboutMe']?.toString(),
       interests: (j['interests'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      notifPrefs: () {
+        final n = j['notifPrefs'];
+        if (n is Map) {
+          return n.map((k, v) => MapEntry(k.toString(), v == true));
+        }
+        return <String, bool>{};
+      }(),
       website: j['website']?.toString(),
       coverGradient: j['coverGradient']?.toString(),
       coverUrl: j['coverUrl']?.toString(),

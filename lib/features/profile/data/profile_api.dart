@@ -13,6 +13,9 @@ class ProfileApi {
     String? location,
     String? website,
     String? aboutMe,
+    List<String>? sportsFollowing,
+    List<String>? interests,
+    Map<String, bool>? notifPrefs,
   }) async {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
@@ -21,6 +24,9 @@ class ProfileApi {
     if (location != null) body['location'] = location;
     if (website != null) body['website'] = website;
     if (aboutMe != null) body['aboutMe'] = aboutMe;
+    if (sportsFollowing != null) body['sportsFollowing'] = sportsFollowing;
+    if (interests != null) body['interests'] = interests;
+    if (notifPrefs != null) body['notifPrefs'] = notifPrefs;
 
     final data = await _client.putJson('/profile', body: body);
     final map = data is Map<String, dynamic>
