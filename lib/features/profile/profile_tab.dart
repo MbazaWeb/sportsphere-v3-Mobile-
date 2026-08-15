@@ -39,11 +39,12 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
     final user = auth.user;
     final authed = auth.isAuthenticated;
 
-    if (!authed) {
+    if (!authed || user == null) {
       return _GuestProfile(onSignIn: widget.onSignIn);
     }
 
-    final roleCfg = ProfileRoleRegistry.forRole(user?.role ?? user?.roleName ?? 'fan');
+    final profile = user; // non-null after guard
+    final roleCfg = ProfileRoleRegistry.forRole(profile.role ?? profile.roleName ?? 'fan');
     if (!roleCfg.tabs.any((t) => t.id == _activeTab)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() => _activeTab = roleCfg.tabs.first.id);
@@ -53,9 +54,9 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
     return SafeArea(
       child: NestedScrollView(
         headerSliverBuilder: (context, inner) => [
-          SliverToBoxAdapter(child: _ProfileHeader(user: user!, roleCfg: roleCfg)),
-          if (user.verificationStatus == 'pending')
-            VerificationBanner(),
+          SliverToBoxAdapter(child: _ProfileHeader(user: profile, roleCfg: roleCfg)),
+          if (profile.verificationStatus == 'pending')
+            const VerificationBanner(),
           SliverToBoxAdapter(
             child: _RoleTabBar(
               tabs: roleCfg.tabs,
@@ -66,7 +67,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
         ],
         body: _RoleTabBody(
           tabId: _activeTab,
-          user: user,
+          user: profile,
           roleCfg: roleCfg,
           onEdit: () {
             showModalBottomSheet(
