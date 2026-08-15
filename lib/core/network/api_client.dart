@@ -3,14 +3,19 @@ import 'package:http/http.dart' as http;
 import '../constants/api_config.dart';
 import '../errors/api_exception.dart';
 
-/// HTTP client matching mobile-oriented auth in `api/auth/route.ts`:
-/// Authorization: Bearer <token>
+/// HTTP client — Authorization: Bearer <JWT> for mobile (see api/auth).
 class ApiClient {
-  ApiClient({http.Client? client, this.tokenProvider})
-      : _client = client ?? http.Client();
+  ApiClient({
+    http.Client? client,
+    this.tokenProvider,
+    this.onUnauthorized,
+  }) : _client = client ?? http.Client();
 
   final http.Client _client;
   final Future<String?> Function()? tokenProvider;
+
+  /// Called on HTTP 401 so session can be cleared.
+  final Future<void> Function()? onUnauthorized;
 
   Future<Map<String, String>> _headers({Map<String, String>? extra}) async {
     final h = <String, String>{
@@ -83,6 +88,10 @@ class ApiClient {
     }
     if (res.statusCode >= 200 && res.statusCode < 300) {
       return data;
+    }
+    if (res.statusCode == 401) {
+      // Fire-and-forget session clear
+      onUnauthorized?.call();
     }
     final msg = data is Map && data['error'] != null
         ? data['error'].toString()

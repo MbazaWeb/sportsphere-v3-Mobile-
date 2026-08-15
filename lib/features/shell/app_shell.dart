@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/bottom_nav.dart';
 import '../auth/login_sheet.dart';
@@ -9,16 +11,15 @@ import '../create/create_tab.dart';
 import '../activity/activity_tab.dart';
 import '../profile/profile_tab.dart';
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> {
   AppTab _current = AppTab.home;
-  bool _isAuthenticated = false;
   bool _showLogin = false;
   bool _showRegister = false;
 
@@ -38,7 +39,6 @@ class _AppShellState extends State<AppShell> {
       });
 
   void _onAuthSuccess() => setState(() {
-        _isAuthenticated = true;
         _showLogin = false;
         _showRegister = false;
         _current = AppTab.profile;
@@ -95,6 +95,9 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authProvider);
+    final isAuthed = auth.isAuthenticated;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -110,7 +113,7 @@ class _AppShellState extends State<AppShell> {
           ),
           SafeArea(
             bottom: false,
-            child: _buildTabContent(),
+            child: _buildTabContent(isAuthed),
           ),
           Positioned(
             left: 0,
@@ -118,7 +121,7 @@ class _AppShellState extends State<AppShell> {
             bottom: 0,
             child: BottomNav(
               currentTab: _current == AppTab.create ? AppTab.home : _current,
-              isAuthenticated: _isAuthenticated,
+              isAuthenticated: isAuthed,
               visible: true,
               onTabSelected: (tab) {
                 if (tab == AppTab.create) {
@@ -137,7 +140,7 @@ class _AppShellState extends State<AppShell> {
               onOpenRegister: _openRegister,
               onOpenForgot: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Forgot password — with login phase')),
+                  const SnackBar(content: Text('Forgot password — coming next')),
                 );
               },
             ),
@@ -152,20 +155,24 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  Widget _buildTabContent() {
+  Widget _buildTabContent(bool isAuthed) {
     switch (_current) {
       case AppTab.home:
         return const HomeTab();
       case AppTab.scores:
         return const ScoresTab();
       case AppTab.create:
-        return const HomeTab(); // sheet handles create
+        return const HomeTab();
       case AppTab.activity:
         return ActivityTab(onSignIn: _openLogin);
       case AppTab.profile:
         return ProfileTab(
-          isAuthenticated: _isAuthenticated,
+          isAuthenticated: isAuthed,
           onSignIn: _openLogin,
+          onSignOut: () async {
+            await ref.read(authProvider.notifier).logout();
+            if (mounted) setState(() => _current = AppTab.home);
+          },
         );
     }
   }

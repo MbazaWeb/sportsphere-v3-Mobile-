@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import 'auth_logo.dart';
 
-/// Register sheet matching web RegistrationModal (fan account first).
-class RegisterSheet extends StatefulWidget {
+/// Register — real POST /api/auth/register (JWT stored securely).
+class RegisterSheet extends ConsumerStatefulWidget {
   const RegisterSheet({
     super.key,
     required this.onClose,
@@ -18,10 +20,10 @@ class RegisterSheet extends StatefulWidget {
   final VoidCallback onOpenLogin;
 
   @override
-  State<RegisterSheet> createState() => _RegisterSheetState();
+  ConsumerState<RegisterSheet> createState() => _RegisterSheetState();
 }
 
-class _RegisterSheetState extends State<RegisterSheet> {
+class _RegisterSheetState extends ConsumerState<RegisterSheet> {
   final _nameCtrl = TextEditingController();
   final _handleCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
@@ -40,24 +42,45 @@ class _RegisterSheetState extends State<RegisterSheet> {
   }
 
   Future<void> _submit() async {
+    final name = _nameCtrl.text.trim();
+    final handle = _handleCtrl.text.trim().replaceFirst(RegExp(r'^@'), '');
+    final email = _emailCtrl.text.trim();
+    final password = _passCtrl.text;
+
+    if (name.isEmpty || handle.isEmpty || email.isEmpty) {
+      setState(() => _error = 'Name, handle, and email are required.');
+      return;
+    }
+    if (password.length < 8) {
+      setState(() => _error = 'Password must be at least 8 characters.');
+      return;
+    }
+
     setState(() {
       _error = null;
       _loading = true;
     });
-    await Future.delayed(const Duration(milliseconds: 900));
 
-    if (_nameCtrl.text.trim().isEmpty ||
-        _emailCtrl.text.trim().isEmpty ||
-        _passCtrl.text.length < 6) {
-      setState(() {
-        _error = 'Fill all fields. Password must be at least 6 characters.';
-        _loading = false;
-      });
+    final ok = await ref.read(authProvider.notifier).register(
+          name: name,
+          email: email,
+          handle: handle,
+          password: password,
+        );
+
+    if (!mounted) return;
+
+    if (ok) {
+      setState(() => _loading = false);
+      widget.onSuccess();
       return;
     }
 
-    setState(() => _loading = false);
-    widget.onSuccess();
+    final err = ref.read(authProvider).error ?? 'Registration failed';
+    setState(() {
+      _loading = false;
+      _error = err.replaceFirst(RegExp(r'^ApiException\(\d+\):\s*'), '');
+    });
   }
 
   @override

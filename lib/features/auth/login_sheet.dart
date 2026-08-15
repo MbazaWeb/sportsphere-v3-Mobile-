@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import 'auth_logo.dart';
 
-/// Login bottom/centered sheet matching web LoginModal.
-class LoginSheet extends StatefulWidget {
+/// Login sheet — real POST /api/auth (email OR handle + password).
+class LoginSheet extends ConsumerStatefulWidget {
   const LoginSheet({
     super.key,
     required this.onClose,
@@ -20,10 +22,10 @@ class LoginSheet extends StatefulWidget {
   final VoidCallback? onOpenForgot;
 
   @override
-  State<LoginSheet> createState() => _LoginSheetState();
+  ConsumerState<LoginSheet> createState() => _LoginSheetState();
 }
 
-class _LoginSheetState extends State<LoginSheet> {
+class _LoginSheetState extends ConsumerState<LoginSheet> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _obscure = true;
@@ -39,34 +41,44 @@ class _LoginSheetState extends State<LoginSheet> {
   }
 
   Future<void> _submit() async {
+    final id = _emailCtrl.text.trim();
+    final password = _passCtrl.text;
+    if (id.isEmpty || password.isEmpty) {
+      setState(() {
+        _error = 'Please enter email/handle and password';
+        _notFound = false;
+      });
+      return;
+    }
+
     setState(() {
       _error = null;
       _notFound = false;
       _loading = true;
     });
 
-    // Demo: accept any non-empty credentials for now
-    await Future.delayed(const Duration(milliseconds: 800));
+    final looksEmail = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(id);
+    final ok = await ref.read(authProvider.notifier).login(
+          email: looksEmail ? id : null,
+          handle: looksEmail ? null : id.replaceFirst(RegExp(r'^@'), ''),
+          password: password,
+        );
 
-    if (_emailCtrl.text.trim().isEmpty || _passCtrl.text.isEmpty) {
-      setState(() {
-        _error = 'Please enter email/handle and password';
-        _loading = false;
-      });
+    if (!mounted) return;
+
+    if (ok) {
+      setState(() => _loading = false);
+      widget.onSuccess();
       return;
     }
 
-    // Simulated not-found for demo
-    if (_emailCtrl.text.trim().toLowerCase() == 'missing@test.com') {
-      setState(() {
-        _notFound = true;
-        _loading = false;
-      });
-      return;
-    }
-
-    setState(() => _loading = false);
-    widget.onSuccess();
+    final err = ref.read(authProvider).error ?? 'Login failed';
+    final lower = err.toLowerCase();
+    setState(() {
+      _loading = false;
+      _notFound = lower.contains('invalid') || lower.contains('not found') || lower.contains('401');
+      _error = err.replaceFirst(RegExp(r'^ApiException\(\d+\):\s*'), '');
+    });
   }
 
   @override

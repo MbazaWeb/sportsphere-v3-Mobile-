@@ -11,7 +11,13 @@ final tokenStorageProvider = Provider((ref) => TokenStorage());
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   final storage = ref.watch(tokenStorageProvider);
-  return ApiClient(tokenProvider: storage.readToken);
+  return ApiClient(
+    tokenProvider: storage.readToken,
+    onUnauthorized: () async {
+      await storage.clear();
+      // Avoid circular rebuild issues — auth hydrate next read will be guest
+    },
+  );
 });
 
 final authApiProvider = Provider((ref) => AuthApi(ref.watch(apiClientProvider)));
@@ -84,7 +90,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = AuthState(user: result.user, hydrated: true);
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _friendly(e));
       return false;
     }
   }
@@ -104,9 +110,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = AuthState(user: result.user, hydrated: true);
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _friendly(e));
       return false;
     }
+  }
+
+  String _friendly(Object e) {
+    final s = e.toString();
+    // Strip ApiException(401): prefix when present
+    final m = RegExp(r'ApiException\(\d+\):\s*(.*)').firstMatch(s);
+    if (m != null) return m.group(1) ?? s;
+    return s;
   }
 
   Future<void> logout() async {
