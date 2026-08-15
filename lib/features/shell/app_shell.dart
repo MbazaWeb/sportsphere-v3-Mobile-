@@ -65,8 +65,25 @@ class _AppShellState extends ConsumerState<AppShell> {
   void _onAuthSuccess() => setState(() {
         _showLogin = false;
         _showRegister = false;
-        _current = AppTab.profile;
+        _current = AppTab.home; // Go to home after login
       });
+
+  // Handle tab selection - prevent guests from accessing hidden tabs
+  void _handleTabSelection(AppTab tab) {
+    // If not authenticated and trying to access restricted tabs
+    if (!ref.read(authProvider).isAuthenticated) {
+      if (tab == AppTab.activity || tab == AppTab.profile) {
+        _openLogin();
+        return;
+      }
+    }
+    
+    if (tab == AppTab.create) {
+      _openCreateSheet();
+      return;
+    }
+    setState(() => _current = tab);
+  }
 
   void _openCreateSheet() {
     showModalBottomSheet<void>(
@@ -147,13 +164,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               currentTab: _current == AppTab.create ? AppTab.home : _current,
               isAuthenticated: isAuthed,
               visible: true,
-              onTabSelected: (tab) {
-                if (tab == AppTab.create) {
-                  _openCreateSheet();
-                  return;
-                }
-                setState(() => _current = tab);
-              },
+              onTabSelected: _handleTabSelection,
               onLoginTap: _openLogin,
             ),
           ),
@@ -202,7 +213,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           onSignIn: _openLogin,
           onSignOut: () async {
             await ref.read(authProvider.notifier).logout();
-            if (mounted) setState(() => _current = AppTab.home);
+            if (mounted) setState(() => _current = AppTab.home); // Redirect to home after logout
           },
         );
     }
