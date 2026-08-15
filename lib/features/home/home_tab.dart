@@ -14,8 +14,9 @@ class HomeTab extends StatefulWidget {
 class _HomeTabState extends State<HomeTab> {
   String _subTab = 'for-you';
 
+  // Exact labels from HomeHeader.tsx SUBTABS
   static const _tabs = [
-    ('for-you', 'For You'),
+    ('for-you', 'Sportlights'),
     ('trending', 'Trending'),
     ('predictions', 'Predictions'),
     ('polls', 'Polls'),
