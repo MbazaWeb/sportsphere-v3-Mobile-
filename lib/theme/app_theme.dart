@@ -11,7 +11,6 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
-      surfaceTintColor: Colors.transparent,
       // Prevent Material from painting gold overlays on hover/press over large areas
       splashFactory: NoSplash.splashFactory,
       highlightColor: Colors.transparent,
