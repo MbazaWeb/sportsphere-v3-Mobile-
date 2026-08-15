@@ -1,9 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/app_colors.dart';
 
-/// Matches HomeHeader.tsx + sub-tabs from screenshots.
+/// Premium home header — frosted glass, iOS-tight type.
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
     super.key,
@@ -14,7 +15,7 @@ class HomeHeader extends StatelessWidget {
     this.onLeaderboard,
   });
 
-  final String activeSubTab; // for-you | trending | predictions | polls
+  final String activeSubTab;
   final ValueChanged<String> onSubTabChanged;
   final VoidCallback? onSearch;
   final VoidCallback? onNotifications;
@@ -29,83 +30,102 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.92),
-        border: Border(
-          bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.6)),
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // Top row: logo + actions
-            SizedBox(
-              height: 56,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    SvgPicture.asset(
-                      'assets/images/logo.svg',
-                      height: 28,
-                      fit: BoxFit.contain,
-                      placeholderBuilder: (_) => Text(
-                        'S',
-                        style: GoogleFonts.outfit(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primary,
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.background.withValues(alpha: 0.72),
+            border: Border(
+              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 52,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        SvgPicture.asset(
+                          'assets/images/logo.svg',
+                          height: 26,
+                          fit: BoxFit.contain,
+                          placeholderBuilder: (_) => Text(
+                            'S',
+                            style: GoogleFonts.outfit(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.primary,
+                            ),
+                          ),
                         ),
-                      ),
+                        const Spacer(),
+                        _IconBtn(Icons.emoji_events_outlined, onLeaderboard),
+                        const SizedBox(width: 6),
+                        _IconBtn(Icons.search_rounded, onSearch),
+                        const SizedBox(width: 6),
+                        _IconBtn(Icons.notifications_none_rounded, onNotifications),
+                      ],
                     ),
-                    const Spacer(),
-                    _IconBtn(Icons.emoji_events_outlined, onLeaderboard),
-                    const SizedBox(width: 4),
-                    _IconBtn(Icons.search, onSearch),
-                    const SizedBox(width: 4),
-                    _IconBtn(Icons.notifications_none_rounded, onNotifications),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            // Sub-tabs
-            SizedBox(
-              height: 44,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                itemCount: subTabs.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, i) {
-                  final (id, label) = subTabs[i];
-                  final active = activeSubTab == id;
-                  return GestureDetector(
-                    onTap: () => onSubTabChanged(id),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: active ? AppColors.primary : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        label,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: active
-                              ? AppColors.primaryForeground
-                              : AppColors.mutedForeground,
+                SizedBox(
+                  height: 46,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                    itemCount: subTabs.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 6),
+                    itemBuilder: (context, i) {
+                      final (id, label) = subTabs[i];
+                      final active = activeSubTab == id;
+                      return GestureDetector(
+                        onTap: () => onSubTabChanged(id),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutCubic,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: active ? AppColors.primary : Colors.white.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(
+                              color: active
+                                  ? AppColors.primary
+                                  : Colors.white.withValues(alpha: 0.06),
+                            ),
+                            boxShadow: active
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.primary.withValues(alpha: 0.25),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Text(
+                            label,
+                            style: GoogleFonts.inter(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.2,
+                              color: active
+                                  ? AppColors.primaryForeground
+                                  : AppColors.mutedForeground,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -120,15 +140,15 @@ class _IconBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
+      color: Colors.white.withValues(alpha: 0.05),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: SizedBox(
-          width: 40,
-          height: 40,
-          child: Icon(icon, size: 20, color: AppColors.mutedForeground),
+          width: 38,
+          height: 38,
+          child: Icon(icon, size: 19, color: AppColors.mutedForeground),
         ),
       ),
     );

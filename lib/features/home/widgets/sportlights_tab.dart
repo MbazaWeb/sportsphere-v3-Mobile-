@@ -52,8 +52,8 @@ class SportlightsTab extends ConsumerWidget {
             ),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
             itemCount: posts.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, i) => LiveFeedCard(post: posts[i]),
+            separatorBuilder: (_, __) => const SizedBox(height: 14),
+            itemBuilder: (context, i) => LiveFeedCard(post: posts[i], index: i),
           ),
         );
       },
@@ -62,17 +62,19 @@ class SportlightsTab extends ConsumerWidget {
 }
 
 class LiveFeedCard extends StatelessWidget {
-  const LiveFeedCard({super.key, required this.post});
+  const LiveFeedCard({super.key, required this.post, this.index = 0});
   final Post post;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
     final u = post.user;
     final time = _relTime(post.createdAt);
 
-    return GlassCard(
-      borderRadius: 16,
-      padding: const EdgeInsets.all(14),
+    return AnimatedGlassCard(
+      index: index,
+      borderRadius: 20,
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -89,7 +91,7 @@ class LiveFeedCard extends StatelessWidget {
                         Flexible(
                           child: Text(
                             u.name,
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+                            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 15, letterSpacing: -0.2, height: 1.2),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -115,7 +117,7 @@ class LiveFeedCard extends StatelessWidget {
                     ),
                     Text(
                       '${u.handle.startsWith('@') ? u.handle : '@${u.handle}'} · $time',
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground),
+                      style: GoogleFonts.inter(fontSize: 12.5, color: AppColors.mutedForeground, letterSpacing: -0.1, height: 1.25),
                     ),
                   ],
                 ),
@@ -124,12 +126,12 @@ class LiveFeedCard extends StatelessWidget {
           ),
           if (post.content.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(post.content, style: GoogleFonts.inter(fontSize: 14, height: 1.4)),
+            Text(post.content, style: GoogleFonts.inter(fontSize: 15.5, height: 1.45, letterSpacing: -0.15, fontWeight: FontWeight.w400)),
           ],
           if (post.mediaUrls.isNotEmpty) ...[
             const SizedBox(height: 12),
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               child: AspectRatio(
                 aspectRatio: 16 / 10,
                 child: Image.network(
@@ -292,9 +294,17 @@ class _Act extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.mutedForeground),
-        const SizedBox(width: 4),
-        Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
+        Icon(icon, size: 20, color: AppColors.mutedForeground.withValues(alpha: 0.9)),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.1,
+            color: AppColors.mutedForeground,
+          ),
+        ),
       ],
     );
   }
