@@ -8,6 +8,8 @@ import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import 'domain/profile_role_registry.dart';
 import 'presentation/edit_profile_sheet.dart';
+import 'presentation/settings_sheet.dart';
+import 'presentation/saved_sheet.dart';
 import 'presentation/role_upgrade_sheet.dart';
 import 'presentation/role_tab_content.dart';
 
@@ -483,6 +485,19 @@ class _OverviewBody extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right, color: AppColors.mutedForeground),
                 onTap: onEdit,
               ),
+              ListTile(
+                leading: const Icon(Icons.bookmark_border, color: AppColors.mutedForeground),
+                title: Text('Saved', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                trailing: const Icon(Icons.chevron_right, color: AppColors.mutedForeground),
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => const SavedSheet(),
+                  );
+                },
+              ),
               if (roleCfg.role == 'fan')
                 ListTile(
                   leading: const Icon(Icons.workspace_premium_outlined, color: AppColors.primary),
@@ -499,6 +514,19 @@ class _OverviewBody extends StatelessWidget {
                   },
                 ),
               const _BiometricTile(),
+              ListTile(
+                leading: const Icon(Icons.settings_outlined, color: AppColors.mutedForeground),
+                title: Text('Settings', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                trailing: const Icon(Icons.chevron_right, color: AppColors.mutedForeground),
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => SettingsSheet(onSignOut: onSignOut),
+                  );
+                },
+              ),
               ListTile(
                 leading: const Icon(Icons.logout, color: AppColors.destructive),
                 title: Text('Sign out', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppColors.destructive)),
