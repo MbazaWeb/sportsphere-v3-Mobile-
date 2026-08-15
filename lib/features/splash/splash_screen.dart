@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 1:1 port of SplashScreen.tsx — Stack layout (no Column overflow).
 class SplashScreen extends StatefulWidget {
@@ -109,7 +110,21 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 600),
     );
 
-    _progressCtrl.forward();
+    () async {
+      final p = await SharedPreferences.getInstance();
+      final reduce = p.getBool('ss_reducedMotion') ?? false;
+      if (reduce && mounted) {
+        _progressCtrl.value = 1.0;
+        _pct = 100;
+        _wordIndex = _words.length - 1;
+        _wordVisible = true;
+        // short settle then done
+        await Future.delayed(const Duration(milliseconds: 400));
+        if (mounted) _fadeOutCtrl.forward().then((_) => widget.onDone());
+        return;
+      }
+      _progressCtrl.forward();
+    }();
     _logoEnterCtrl.forward();
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _taglineCtrl.forward();

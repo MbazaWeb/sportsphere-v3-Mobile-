@@ -41,6 +41,9 @@ class _GlassCardState extends State<GlassCard> {
   Widget build(BuildContext context) {
     final hover = widget.enableHover && _hovered;
     final pressed = _pressed;
+    final reduce = MediaQuery.disableAnimationsOf(context);
+    final anim = reduce ? Duration.zero : const Duration(milliseconds: 180);
+    final animFast = reduce ? Duration.zero : const Duration(milliseconds: 140);
 
     // Subtle only — never flood the card with gold
     final border = widget.borderColor ??
@@ -66,10 +69,10 @@ class _GlassCardState extends State<GlassCard> {
           onTapCancel: () => setState(() => _pressed = false),
           child: AnimatedScale(
             scale: pressed ? 0.99 : 1.0,
-            duration: const Duration(milliseconds: 140),
+            duration: animFast,
             curve: Curves.easeOut,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
+              duration: anim,
               curve: Curves.easeOut,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(widget.borderRadius),
@@ -94,7 +97,7 @@ class _GlassCardState extends State<GlassCard> {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: widget.blur, sigmaY: widget.blur),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
+                    duration: anim,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(widget.borderRadius),
                       // Stay glass/dark — slight white lift on hover, NOT gold fill
@@ -175,6 +178,13 @@ class _AnimatedGlassCardState extends State<AnimatedGlassCard>
     super.initState();
     final delayMs = (widget.index * 55).clamp(0, 400);
     _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 520));
+    // If reduced motion, snap to end on first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _c.value = 1.0;
+      }
+    });
     final curved = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
     _opacity = Tween<double>(begin: 0, end: 1).animate(curved);
     _scale = Tween<double>(begin: 0.96, end: 1.0).animate(curved);

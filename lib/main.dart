@@ -41,13 +41,25 @@ class SportsphereApp extends ConsumerWidget {
       themeMode: prefs.themeMode,
       builder: (context, child) {
         final media = MediaQuery.of(context);
-        return MediaQuery(
+        Widget content = MediaQuery(
           data: media.copyWith(
             textScaler: TextScaler.linear(prefs.textScale * media.textScaler.scale(1.0)),
-            // highContrast is platform; we keep flag for future widgets
+            highContrast: prefs.highContrast || media.highContrast,
+            disableAnimations: prefs.reducedMotion || media.disableAnimations,
           ),
           child: child ?? const SizedBox.shrink(),
         );
+        // High-contrast boost: slightly stronger borders via IconTheme/DefaultTextStyle
+        if (prefs.highContrast) {
+          content = IconTheme.merge(
+            data: const IconThemeData(weight: 700),
+            child: DefaultTextStyle.merge(
+              style: const TextStyle(fontWeight: FontWeight.w600),
+              child: content,
+            ),
+          );
+        }
+        return content;
       },
       home: const _Root(),
     );
