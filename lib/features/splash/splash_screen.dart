@@ -125,32 +125,24 @@ class _SplashScreenState extends State<SplashScreen>
 
 
   /// Progress % and words share the same linear clock.
-  /// Each word owns an equal slice of 0–100% (~11.1% each).
+  /// AnimatedSwitcher handles smooth crossfade — no stacking delays.
   void _onProgressTick() {
-    final p = (_progressAnim.value * 100);
+    final p = _progressAnim.value * 100;
     final pct = p.round().clamp(0, 100);
-    // Map progress to word index (0..8), hold last word at 100%
     final idx = p >= 99.5
         ? _words.length - 1
         : (p / 100 * _words.length).floor().clamp(0, _words.length - 1);
 
-    if (pct != _pct) {
-      setState(() => _pct = pct);
-    }
-    if (idx != _wordIndex) {
-      // brief fade out then show next word
-      setState(() => _wordVisible = false);
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (!mounted) return;
-        setState(() {
+    if (pct != _pct || idx != _wordIndex) {
+      setState(() {
+        _pct = pct;
+        if (idx != _wordIndex) {
           _wordIndex = idx;
           _wordVisible = true;
-        });
-      });
-    } else if (_wordIndex < 0 && p > 1) {
-      setState(() {
-        _wordIndex = 0;
-        _wordVisible = true;
+        } else if (_wordIndex < 0 && p > 0.5) {
+          _wordIndex = 0;
+          _wordVisible = true;
+        }
       });
     }
   }
@@ -294,17 +286,34 @@ class _SplashScreenState extends State<SplashScreen>
                               SizedBox(
                                 height: size.height * 0.055,
                                 child: Center(
-                                  child: _wordIndex < 0
-                                      ? const SizedBox.shrink()
-                                      : AnimatedOpacity(
-                                          duration: const Duration(
-                                              milliseconds: 300),
-                                          opacity: _wordVisible ? 1 : 0,
-                                          child: Text(
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 420),
+                                    switchInCurve: Curves.easeOutCubic,
+                                    switchOutCurve: Curves.easeInCubic,
+                                    transitionBuilder: (child, anim) {
+                                      final fade = CurvedAnimation(
+                                        parent: anim,
+                                        curve: Curves.easeInOut,
+                                      );
+                                      final slide = Tween<Offset>(
+                                        begin: const Offset(0, 0.25),
+                                        end: Offset.zero,
+                                      ).animate(fade);
+                                      return FadeTransition(
+                                        opacity: fade,
+                                        child: SlideTransition(
+                                          position: slide,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: _wordIndex < 0
+                                        ? const SizedBox.shrink(key: ValueKey(-1))
+                                        : Text(
                                             _words[_wordIndex].toUpperCase(),
+                                            key: ValueKey(_wordIndex),
                                             textAlign: TextAlign.center,
                                             style: GoogleFonts.outfit(
-                                              // Smaller than logo (logo ~58% width)
                                               fontSize: (size.width * 0.038)
                                                   .clamp(16.0, 26.0),
                                               fontWeight: FontWeight.w800,
@@ -317,19 +326,19 @@ class _SplashScreenState extends State<SplashScreen>
                                                     245,
                                                     197,
                                                     24,
-                                                    0.2 +
-                                                        0.3 *
+                                                    0.25 +
+                                                        0.25 *
                                                             _wordGlowCtrl
                                                                 .value,
                                                   ),
-                                                  blurRadius: 20 +
-                                                      20 *
+                                                  blurRadius: 16 +
+                                                      12 *
                                                           _wordGlowCtrl.value,
                                                 ),
                                               ],
                                             ),
                                           ),
-                                        ),
+                                  ),
                                 ),
                               ),
 
