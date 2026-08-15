@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/providers/app_providers.dart';
+import '../../core/security/biometric_lock.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 
@@ -94,6 +95,7 @@ class ProfileTab extends ConsumerWidget {
             child: Column(
               children: [
                 _Tile(Icons.settings_outlined, 'Settings', () {}),
+                if (authed) const _BiometricTile(),
                 _Tile(Icons.bookmark_border, 'Saved', () {}),
                 _Tile(Icons.emoji_events_outlined, 'Achievements', () {}),
                 _Tile(Icons.people_outline, 'Following', () {}),
@@ -148,6 +150,71 @@ class _Tile extends StatelessWidget {
       ),
       trailing: danger ? null : const Icon(Icons.chevron_right, color: AppColors.mutedForeground),
       onTap: onTap,
+    );
+  }
+}
+
+
+class _BiometricTile extends StatefulWidget {
+  const _BiometricTile();
+
+  @override
+  State<_BiometricTile> createState() => _BiometricTileState();
+}
+
+class _BiometricTileState extends State<_BiometricTile> {
+  final _lock = BiometricLock();
+  bool _enabled = false;
+  bool _available = false;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final enabled = await _lock.isEnabled();
+    final available = await _lock.canCheck();
+    if (!mounted) return;
+    setState(() {
+      _enabled = enabled;
+      _available = available;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const ListTile(
+        leading: Icon(Icons.fingerprint, color: AppColors.mutedForeground),
+        title: Text('Biometric lock'),
+      );
+    }
+    return SwitchListTile(
+      secondary: const Icon(Icons.fingerprint, color: AppColors.mutedForeground),
+      title: Text('Biometric lock', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+      subtitle: Text(
+        _available
+            ? 'Require Face ID / fingerprint when opening the app'
+            : 'Not available on this device',
+        style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground),
+      ),
+      value: _enabled && _available,
+      activeColor: AppColors.primary,
+      onChanged: !_available
+          ? null
+          : (v) async {
+              if (v) {
+                final ok = await _lock.authenticate(reason: 'Enable biometric lock');
+                if (!ok) return;
+              }
+              await _lock.setEnabled(v);
+              if (!mounted) return;
+              setState(() => _enabled = v);
+            },
     );
   }
 }

@@ -5,6 +5,8 @@ import '../../theme/app_colors.dart';
 import '../../widgets/bottom_nav.dart';
 import '../auth/login_sheet.dart';
 import '../auth/register_sheet.dart';
+import '../auth/forgot_password_sheet.dart';
+import '../auth/reset_password_sheet.dart';
 import '../home/home_tab.dart';
 import '../scores/scores_tab.dart';
 import '../create/create_tab.dart';
@@ -22,18 +24,40 @@ class _AppShellState extends ConsumerState<AppShell> {
   AppTab _current = AppTab.home;
   bool _showLogin = false;
   bool _showRegister = false;
+  bool _showForgot = false;
+  bool _showReset = false;
 
   void _openLogin() => setState(() {
         _showLogin = true;
         _showRegister = false;
+        _showForgot = false;
+        _showReset = false;
       });
 
   void _openRegister() => setState(() {
         _showRegister = true;
         _showLogin = false;
+        _showForgot = false;
+        _showReset = false;
       });
 
   void _closeAuth() => setState(() {
+        _showLogin = false;
+        _showRegister = false;
+        _showForgot = false;
+        _showReset = false;
+      });
+
+  void _openForgot() => setState(() {
+        _showForgot = true;
+        _showLogin = false;
+        _showRegister = false;
+        _showReset = false;
+      });
+
+  void _openReset() => setState(() {
+        _showReset = true;
+        _showForgot = false;
         _showLogin = false;
         _showRegister = false;
       });
@@ -138,16 +162,23 @@ class _AppShellState extends ConsumerState<AppShell> {
               onClose: _closeAuth,
               onSuccess: _onAuthSuccess,
               onOpenRegister: _openRegister,
-              onOpenForgot: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Forgot password — coming next')),
-                );
-              },
+              onOpenForgot: _openForgot,
             ),
           if (_showRegister)
             RegisterSheet(
               onClose: _closeAuth,
               onSuccess: _onAuthSuccess,
+              onOpenLogin: _openLogin,
+            ),
+          if (_showForgot)
+            ForgotPasswordSheet(
+              onClose: _closeAuth,
+              onOpenLogin: _openLogin,
+              onOpenReset: _openReset,
+            ),
+          if (_showReset)
+            ResetPasswordSheet(
+              onClose: _closeAuth,
               onOpenLogin: _openLogin,
             ),
         ],

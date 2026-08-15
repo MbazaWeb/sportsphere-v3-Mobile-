@@ -69,9 +69,21 @@ class AuthApi {
     }
   }
 
-  /// POST /api/auth/forgot-password
-  Future<void> forgotPassword(String email) async {
-    await _client.postJson('/auth/forgot-password', body: {'email': email});
+  /// POST /api/auth/forgot-password — generic response (no email enumeration)
+  Future<String> forgotPassword(String email) async {
+    final data = await _client.postJson('/auth/forgot-password', body: {
+      'email': email.trim().toLowerCase(),
+    });
+    if (data is Map && data['message'] != null) return data['message'].toString();
+    return 'If that email is registered, a reset link has been sent.';
+  }
+
+  /// POST /api/auth/reset-password — token from email + new password (min 8)
+  Future<void> resetPassword({required String token, required String password}) async {
+    await _client.postJson('/auth/reset-password', body: {
+      'token': token.trim(),
+      'password': password,
+    });
   }
 
   /// POST /api/auth/verify-email/request
