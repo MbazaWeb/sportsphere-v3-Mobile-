@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/providers/appearance_prefs.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
 
@@ -50,6 +51,12 @@ class _AppearanceSheetState extends ConsumerState<AppearanceSheet> {
     await prefs.setString('ss_fontSize', _fontSize);
     await prefs.setBool('ss_reducedMotion', _reducedMotion);
     await prefs.setBool('ss_highContrast', _highContrast);
+    await ref.read(appearancePrefsProvider.notifier).setAll(
+          theme: _theme,
+          fontSize: _fontSize,
+          reducedMotion: _reducedMotion,
+          highContrast: _highContrast,
+        );
 
     try {
       if (ref.read(authProvider).isAuthenticated) {
@@ -64,7 +71,7 @@ class _AppearanceSheetState extends ConsumerState<AppearanceSheet> {
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Appearance saved (restart may apply theme fully)')),
+        const SnackBar(content: Text('Appearance applied')),
       );
     } catch (e) {
       if (!mounted) return;

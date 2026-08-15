@@ -7,6 +7,7 @@ import 'core/security/http_overrides_stub.dart'
     if (dart.library.io) 'core/security/http_overrides_io.dart' as pinning;
 import 'core/storage/token_storage.dart';
 import 'theme/app_theme.dart';
+import 'core/providers/appearance_prefs.dart';
 import 'theme/app_colors.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/shell/app_shell.dart';
@@ -26,15 +27,28 @@ void main() {
   runApp(const ProviderScope(child: SportsphereApp()));
 }
 
-class SportsphereApp extends StatelessWidget {
+class SportsphereApp extends ConsumerWidget {
   const SportsphereApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prefs = ref.watch(appearancePrefsProvider);
     return MaterialApp(
       title: 'Sportsphere',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: prefs.themeMode,
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(
+            textScaler: TextScaler.linear(prefs.textScale * media.textScaler.scale(1.0)),
+            // highContrast is platform; we keep flag for future widgets
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: const _Root(),
     );
   }

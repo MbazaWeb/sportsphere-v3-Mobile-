@@ -120,4 +120,46 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData get light {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: const Color(0xFFF4F6FA),
+      splashFactory: NoSplash.splashFactory,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.black.withValues(alpha: 0.04),
+      splashColor: Colors.black.withValues(alpha: 0.06),
+      focusColor: Colors.transparent,
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.primary,
+        onPrimary: AppColors.primaryForeground,
+        secondary: AppColors.accent,
+        onSecondary: AppColors.accentForeground,
+        surface: Color(0xFFFFFFFF),
+        onSurface: Color(0xFF0A1628),
+        error: AppColors.destructive,
+        onError: Colors.white,
+        outline: Color(0xFFD0D7E2),
+      ),
+      textTheme: AppTypography.textTheme.apply(
+        bodyColor: const Color(0xFF0A1628),
+        displayColor: const Color(0xFF0A1628),
+      ),
+      fontFamily: 'Inter',
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        titleTextStyle: TextStyle(
+          fontFamily: 'Outfit',
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF0A1628),
+        ),
+        iconTheme: IconThemeData(color: Color(0xFF0A1628)),
+      ),
+    );
+  }
+
 }
