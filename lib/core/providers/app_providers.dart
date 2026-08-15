@@ -4,6 +4,9 @@ import '../storage/token_storage.dart';
 import '../../features/auth/data/auth_api.dart';
 import '../../features/home/data/feed_api.dart';
 import '../../features/social/data/social_api.dart';
+import '../../features/messages/data/messages_api.dart';
+import '../../features/profile/data/profile_api.dart';
+import '../../features/media/data/upload_api.dart';
 import '../../shared/models/user_profile.dart';
 import '../../shared/models/post.dart';
 import '../../shared/models/match.dart';
@@ -28,6 +31,12 @@ final standingsApiProvider = Provider((ref) => StandingsApi(ref.watch(apiClientP
 final pollsApiProvider = Provider((ref) => PollsApi(ref.watch(apiClientProvider)));
 final predictionsApiProvider = Provider((ref) => PredictionsApi(ref.watch(apiClientProvider)));
 final socialApiProvider = Provider((ref) => SocialApi(ref.watch(apiClientProvider)));
+final messagesApiProvider = Provider((ref) => MessagesApi(ref.watch(apiClientProvider)));
+final profileApiProvider = Provider((ref) => ProfileApi(ref.watch(apiClientProvider)));
+final uploadApiProvider = Provider((ref) {
+  final storage = ref.watch(tokenStorageProvider);
+  return UploadApi(tokenProvider: storage.readToken);
+});
 
 class AuthState {
   const AuthState({
@@ -123,6 +132,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final m = RegExp(r'ApiException\(\d+\):\s*(.*)').firstMatch(s);
     if (m != null) return m.group(1) ?? s;
     return s;
+  }
+
+  Future<void> applyUser(UserProfile user) async {
+    state = AuthState(user: user, hydrated: true);
   }
 
   Future<void> logout() async {

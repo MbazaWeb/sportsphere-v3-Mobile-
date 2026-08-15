@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/providers/app_providers.dart';
 import '../../core/security/biometric_lock.dart';
+import 'presentation/edit_profile_sheet.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 
@@ -94,6 +95,14 @@ class ProfileTab extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
               children: [
+                _Tile(Icons.edit_outlined, 'Edit profile', () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => const EditProfileSheet(),
+                  );
+                }),
                 _Tile(Icons.settings_outlined, 'Settings', () {}),
                 if (authed) const _BiometricTile(),
                 _Tile(Icons.bookmark_border, 'Saved', () {}),

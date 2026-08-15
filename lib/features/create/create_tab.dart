@@ -190,10 +190,32 @@ class _CreateTabState extends ConsumerState<CreateTab> {
 
     setState(() => _publishing = true);
     try {
-      // Media upload not wired yet — text/poll/prediction publish works
+      final mediaUrls = <String>[];
+      for (var i = 0; i < _previews.length; i++) {
+        final bytes = _previews[i];
+        final name = _files[i].name.isNotEmpty ? _files[i].name : 'upload_$i.jpg';
+        final lower = name.toLowerCase();
+        final ct = lower.endsWith('.png')
+            ? 'image/png'
+            : lower.endsWith('.webp')
+                ? 'image/webp'
+                : lower.endsWith('.mp4') || lower.endsWith('.mov')
+                    ? 'video/mp4'
+                    : 'image/jpeg';
+        final url = await ref.read(uploadApiProvider).uploadBytes(
+              bytes: bytes,
+              filename: name,
+              contentType: ct,
+            );
+        mediaUrls.add(url);
+      }
+      if (mediaUrls.isNotEmpty && postType == 'post') {
+        postType = 'photo';
+      }
       await ref.read(socialApiProvider).createPost(
             content: content.isEmpty ? ' ' : content,
             postType: postType,
+            mediaUrls: mediaUrls,
             poll: poll,
             prediction: prediction,
           );

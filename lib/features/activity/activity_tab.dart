@@ -17,6 +17,7 @@ class ActivityTab extends ConsumerStatefulWidget {
 class _ActivityTabState extends ConsumerState<ActivityTab> {
   String _sub = 'all';
   List<Map<String, dynamic>> _items = [];
+  List<Map<String, dynamic>> _conversations = [];
   bool _loading = false;
   String? _error;
 
@@ -51,10 +52,17 @@ class _ActivityTabState extends ConsumerState<ActivityTab> {
       _error = null;
     });
     try {
-      final list = await ref.read(socialApiProvider).getNotifications();
+      final notifs = await ref.read(socialApiProvider).getNotifications();
+      List<Map<String, dynamic>> convos = [];
+      try {
+        convos = await ref.read(messagesApiProvider).getConversations();
+      } catch (_) {
+        // messages may 401/empty
+      }
       if (!mounted) return;
       setState(() {
-        _items = list;
+        _items = notifs;
+        _conversations = convos;
         _loading = false;
       });
     } catch (e) {
@@ -68,10 +76,7 @@ class _ActivityTabState extends ConsumerState<ActivityTab> {
 
   List<Map<String, dynamic>> get _filtered {
     if (_sub == 'all') return _items;
-    if (_sub == 'messages') {
-      // Messages subtab is separate in web; show empty until messages API wired
-      return const [];
-    }
+    if (_sub == 'messages') return const [];
     if (_sub == 'social') {
       return _items.where((n) {
         final t = n['type']?.toString() ?? '';
@@ -243,16 +248,86 @@ class _ActivityTabState extends ConsumerState<ActivityTab> {
                           ),
                         ),
                       )
-                    : filtered.isEmpty
+                    : _sub == 'messages'
+                        ? (_conversations.isEmpty
+                            ? Center(child: Text('No messages yet', style: GoogleFonts.inter(color: AppColors.mutedForeground)))
+                            : RefreshIndicator(
+                                color: AppColors.primary,
+                                onRefresh: _load,
+                                child: ListView.separated(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                                  itemCount: _conversations.length,
+                                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                                  itemBuilder: (context, i) {
+                                    final c = _conversations[i];
+                                    final name = c['partnerName']?.toString() ?? 'User';
+                                    final handle = c['partnerHandle']?.toString() ?? '';
+                                    final last = c['lastMessage']?.toString() ?? '';
+                                    final unread = (c['unread'] as num?)?.toInt() ?? 0;
+                                    return GlassCard(
+                                      borderRadius: 16,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                      child: Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 22,
+                                            backgroundColor: AppColors.surfaceElevated,
+                                            child: Text(
+                                              name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                              style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14)),
+                                                Text(
+                                                  last,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground),
+                                                ),
+                                                if (handle.isNotEmpty)
+                                                  Text(
+                                                    handle.startsWith('@') ? handle : '@$handle',
+                                                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                          if (unread > 0)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary,
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                '$unread',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: AppColors.primaryForeground,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ))
+                        : filtered.isEmpty
                         ? Center(
                             child: Text(
-                              _sub == 'messages'
-                                  ? 'Messages coming next'
-                                  : _sub == 'social'
-                                      ? 'No social activity yet'
-                                      : _sub == 'sports'
-                                          ? 'No sports updates yet'
-                                          : 'No activity yet',
+                              _sub == 'social'
+                                  ? 'No social activity yet'
+                                  : _sub == 'sports'
+                                      ? 'No sports updates yet'
+                                      : 'No activity yet',
                               style: GoogleFonts.inter(color: AppColors.mutedForeground),
                             ),
                           )
