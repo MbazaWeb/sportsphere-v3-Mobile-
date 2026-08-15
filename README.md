@@ -1,58 +1,35 @@
 # Sportsphere Mobile (Flutter)
 
-Premium sports social platform — Flutter port of the Sportsphere web app with **identical UI/UX**.
+Premium sports social platform — Flutter port with **identical UI/UX** to the web app.
 
-## Design System (v1)
+## Design system
+- Colors: `#0A1628` background, gold `#F5C518`, accent `#FF6B35`
+- Typography: Outfit (headings) + Inter (body)
+- Glass cards, bottom nav, official logo SVG
 
-Exact visual match to the Next.js design tokens:
+## Implemented
+- ✅ Splash (official logo + rotating words + progress)
+- ✅ Auth: Login + Register sheets (matching web modals)
+- ✅ Home feed skeleton (For You / Trending / Predictions / Polls)
+- ✅ Scores tab skeleton (Matches + Standings + Live)
+- ✅ BottomNav with auth gates + Login chip
 
-| Token | Value |
-|-------|-------|
-| Background | `#0A1628` |
-| Background Secondary | `#0F1D3A` |
-| Primary (Gold) | `#F5C518` |
-| Accent (Orange) | `#FF6B35` |
-| Glass card | 5% white + 12px blur |
-| Fonts | Outfit (headings) + Inter (body) |
-
-### Implemented
-
-- `AppColors` / `AppTypography` / `AppTheme`
-- `GlassCard` (backdrop blur, hover lift, gold glow)
-- `BottomNav` (active pill, create FAB-style button, login chip, auto-hide)
-- `SplashScreen` (progress, rotating words, ambient orbs, fade-out)
-
-### Run
-
+## Run
 ```bash
 flutter pub get
-flutter run -d chrome          # web preview
-flutter run                    # device / emulator
+flutter run -d chrome
 ```
 
-### Structure
-
+## Structure
 ```
 lib/
-├── main.dart
-├── theme/
-│   ├── app_colors.dart
-│   ├── app_typography.dart
-│   └── app_theme.dart
-├── widgets/
-│   ├── glass_card.dart
-│   └── bottom_nav.dart
-└── features/
-    ├── splash/splash_screen.dart
-    └── shell/app_shell.dart
+├── theme/          AppColors, AppTypography, AppTheme
+├── widgets/        GlassCard, BottomNav
+├── features/
+│   ├── splash/
+│   ├── auth/       LoginSheet, RegisterSheet, AuthLogo
+│   ├── home/       HomeTab
+│   ├── scores/     ScoresTab
+│   └── shell/      AppShell
+└── main.dart
 ```
-
-## Roadmap
-
-1. ✅ Design system + Splash + BottomNav
-2. Auth (login / register / verify)
-3. Home feed
-4. Scores & standings
-5. Create post
-6. Activity
-7. Multi-role profile system

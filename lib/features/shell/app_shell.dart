@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/bottom_nav.dart';
-import '../../widgets/glass_card.dart';
+import '../auth/login_sheet.dart';
+import '../auth/register_sheet.dart';
+import '../home/home_tab.dart';
+import '../scores/scores_tab.dart';
 
-/// Main app shell with bottom navigation matching the original UX.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -14,7 +16,31 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   AppTab _current = AppTab.home;
   bool _navVisible = true;
-  bool _isAuthenticated = false; // demo toggle
+  bool _isAuthenticated = false;
+  bool _showLogin = false;
+  bool _showRegister = false;
+
+  void _openLogin() => setState(() {
+        _showLogin = true;
+        _showRegister = false;
+      });
+
+  void _openRegister() => setState(() {
+        _showRegister = true;
+        _showLogin = false;
+      });
+
+  void _closeAuth() => setState(() {
+        _showLogin = false;
+        _showRegister = false;
+      });
+
+  void _onAuthSuccess() => setState(() {
+        _isAuthenticated = true;
+        _showLogin = false;
+        _showRegister = false;
+        _current = AppTab.profile;
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +48,6 @@ class _AppShellState extends State<AppShell> {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Background gradient (matches body radial gradient)
           Container(
             decoration: const BoxDecoration(
               gradient: RadialGradient(
@@ -35,14 +60,10 @@ class _AppShellState extends State<AppShell> {
               ),
             ),
           ),
-
-          // Content
           SafeArea(
             bottom: false,
             child: _buildTabContent(),
           ),
-
-          // Bottom nav
           Positioned(
             left: 0,
             right: 0,
@@ -51,16 +72,39 @@ class _AppShellState extends State<AppShell> {
               currentTab: _current,
               isAuthenticated: _isAuthenticated,
               visible: _navVisible,
-              onTabSelected: (tab) => setState(() => _current = tab),
-              onLoginTap: () {
-                // Demo: toggle auth for preview
-                setState(() => _isAuthenticated = true);
+              onTabSelected: (tab) {
+                if ((tab == AppTab.create ||
+                        tab == AppTab.activity ||
+                        tab == AppTab.profile) &&
+                    !_isAuthenticated) {
+                  _openLogin();
+                  return;
+                }
+                setState(() => _current = tab);
+              },
+              onLoginTap: _openLogin,
+            ),
+          ),
+
+          // Auth overlays
+          if (_showLogin)
+            LoginSheet(
+              onClose: _closeAuth,
+              onSuccess: _onAuthSuccess,
+              onOpenRegister: _openRegister,
+              onOpenForgot: () {
+                // Placeholder for forgot password
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Logged in (demo)')),
+                  const SnackBar(content: Text('Forgot password — coming next')),
                 );
               },
             ),
-          ),
+          if (_showRegister)
+            RegisterSheet(
+              onClose: _closeAuth,
+              onSuccess: _onAuthSuccess,
+              onOpenLogin: _openLogin,
+            ),
         ],
       ),
     );
@@ -69,165 +113,32 @@ class _AppShellState extends State<AppShell> {
   Widget _buildTabContent() {
     switch (_current) {
       case AppTab.home:
-        return _HomePlaceholder(onToggleNav: () {
-          setState(() => _navVisible = !_navVisible);
-        });
+        return const HomeTab();
       case AppTab.scores:
-        return const _Placeholder(title: 'Scores', icon: Icons.emoji_events_rounded);
+        return const ScoresTab();
       case AppTab.create:
         return const _Placeholder(title: 'Create', icon: Icons.add_circle_rounded);
       case AppTab.activity:
         return const _Placeholder(title: 'Activity', icon: Icons.notifications_rounded);
       case AppTab.profile:
-        return const _Placeholder(title: 'Profile', icon: Icons.person_rounded);
+        return _Placeholder(
+          title: _isAuthenticated ? 'Profile' : 'Profile',
+          icon: Icons.person_rounded,
+          subtitle: _isAuthenticated ? 'You are signed in (demo)' : 'Sign in to view profile',
+        );
     }
   }
 }
 
-class _HomePlaceholder extends StatelessWidget {
-  const _HomePlaceholder({required this.onToggleNav});
-  final VoidCallback onToggleNav;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      children: [
-        Text(
-          'Home',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Design system preview — same UI/UX as web',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.mutedForeground,
-              ),
-        ),
-        const SizedBox(height: 24),
-
-        // Glass cards demo
-        GlassCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: AppColors.gradientGold),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.sports_soccer, color: AppColors.primaryForeground, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Glass Card', style: Theme.of(context).textTheme.titleMedium),
-                        Text(
-                          'Matches .glass-card CSS exactly',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Backdrop blur · 5% white fill · subtle border · hover lift + gold glow',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        GlassCard(
-          glow: true,
-          child: Row(
-            children: [
-              const Icon(Icons.auto_awesome, color: AppColors.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Gold glow enabled',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // Color swatches
-        Text('Color Tokens', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: const [
-            _ColorSwatch('Primary', AppColors.primary),
-            _ColorSwatch('Accent', AppColors.accent),
-            _ColorSwatch('Background', AppColors.background),
-            _ColorSwatch('Secondary', AppColors.backgroundSecondary),
-            _ColorSwatch('Destructive', AppColors.destructive),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        ElevatedButton(
-          onPressed: onToggleNav,
-          child: const Text('Toggle Bottom Nav (auto-hide demo)'),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton(
-          onPressed: () {},
-          child: const Text('Outlined Gold Button'),
-        ),
-      ],
-    );
-  }
-}
-
-class _ColorSwatch extends StatelessWidget {
-  const _ColorSwatch(this.label, this.color);
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.3),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
-      ],
-    );
-  }
-}
-
 class _Placeholder extends StatelessWidget {
-  const _Placeholder({required this.title, required this.icon});
+  const _Placeholder({
+    required this.title,
+    required this.icon,
+    this.subtitle = 'Coming next',
+  });
   final String title;
   final IconData icon;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +151,7 @@ class _Placeholder extends StatelessWidget {
           Text(title, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text(
-            'Coming next',
+            subtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.mutedForeground,
                 ),

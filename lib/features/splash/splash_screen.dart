@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_colors.dart';
 
@@ -44,7 +45,6 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 3200),
     );
-    // Ease-out cubic matching original: 1 - (1 - t)^3
     _progressAnim = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _progressCtrl, curve: Curves.easeOutCubic),
     );
@@ -85,9 +85,7 @@ class _SplashScreenState extends State<SplashScreen>
       _words.length - 1,
     );
     if (progress > 3 && idx != _wordIndex) {
-      setState(() {
-        _wordVisible = false;
-      });
+      setState(() => _wordVisible = false);
       Future.delayed(const Duration(milliseconds: 150), () {
         if (mounted) {
           setState(() {
@@ -136,7 +134,6 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               child: Stack(
                 children: [
-                  // Ambient orbs
                   Positioned(
                     top: MediaQuery.of(context).size.height * 0.12,
                     left: MediaQuery.of(context).size.width * 0.08,
@@ -171,56 +168,37 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                   ),
-
-                  // Content
                   SafeArea(
                     child: Column(
                       children: [
                         const Spacer(flex: 3),
-
-                        // Logo
                         Opacity(
                           opacity: _logoOpacity.value,
                           child: Transform.scale(
                             scale: _logoScale.value,
                             child: Column(
                               children: [
-                                // Logo mark
-                                Container(
-                                  width: 88,
-                                  height: 88,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(24),
-                                    gradient: const LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: AppColors.gradientGold,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.primary.withValues(alpha: 0.35),
-                                        blurRadius: 32,
-                                        offset: const Offset(0, 8),
+                                SvgPicture.asset(
+                                  'assets/images/logo.svg',
+                                  height: 96,
+                                  fit: BoxFit.contain,
+                                  placeholderBuilder: (_) => Container(
+                                    width: 88,
+                                    height: 88,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(24),
+                                      gradient: const LinearGradient(
+                                        colors: AppColors.gradientGold,
                                       ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.sports_soccer_rounded,
-                                    size: 44,
-                                    color: AppColors.primaryForeground,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                Text(
-                                  'SPORTSPHERE',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 3,
-                                    color: AppColors.foreground,
+                                    ),
+                                    child: const Icon(
+                                      Icons.sports_soccer_rounded,
+                                      size: 44,
+                                      color: AppColors.primaryForeground,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 16),
                                 Text(
                                   'Where Sport Meets Opportunity',
                                   style: GoogleFonts.inter(
@@ -234,10 +212,7 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ),
                         ),
-
                         const Spacer(flex: 2),
-
-                        // Rotating word
                         SizedBox(
                           height: 36,
                           child: AnimatedOpacity(
@@ -259,10 +234,7 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 28),
-
-                        // Progress bar
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 64),
                           child: Column(
@@ -273,7 +245,9 @@ class _SplashScreenState extends State<SplashScreen>
                                   value: _progressAnim.value,
                                   minHeight: 4,
                                   backgroundColor: AppColors.surfaceBorder,
-                                  valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                                  valueColor: const AlwaysStoppedAnimation(
+                                    AppColors.primary,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -288,7 +262,6 @@ class _SplashScreenState extends State<SplashScreen>
                             ],
                           ),
                         ),
-
                         const Spacer(flex: 2),
                       ],
                     ),
