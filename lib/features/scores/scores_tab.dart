@@ -176,7 +176,7 @@ class _MatchesList extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
       itemCount: demos.length,
       itemBuilder: (context, i) {
-        final (home, away, hs, as, status, live) = demos[i];
+        final (home, away, hs, ascore, status, live) = demos[i];
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: GlassCard(
@@ -244,7 +244,7 @@ class _MatchesList extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      as,
+                      ascore,
                       style: GoogleFonts.outfit(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
