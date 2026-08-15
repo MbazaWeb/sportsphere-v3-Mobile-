@@ -551,12 +551,49 @@ class _MatchDetailSheet extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            'Events & lineups load when available from the API.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground),
+          const SizedBox(height: 20),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Events', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16)),
           ),
+          const SizedBox(height: 8),
+          if (m.events.isEmpty)
+            Text(
+              'No events yet for this match.',
+              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground),
+            )
+          else
+            ...m.events.map((e) {
+              final icon = switch (e.type?.toLowerCase()) {
+                'goal' => Icons.sports_soccer,
+                'yellow' || 'yellow_card' => Icons.style,
+                'red' || 'red_card' => Icons.square,
+                'sub' || 'substitution' => Icons.swap_horiz,
+                _ => Icons.circle,
+              };
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 36,
+                      child: Text(
+                        e.minute != null ? "${e.minute}'" : '—',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.primary),
+                      ),
+                    ),
+                    Icon(icon, size: 16, color: AppColors.mutedForeground),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        [e.player, e.type, e.team, e.detail].where((x) => x != null && x.toString().isNotEmpty).join(' · '),
+                        style: GoogleFonts.inter(fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
           const SizedBox(height: 16),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
+import '../../profile/presentation/user_profile_sheet.dart';
 
 class SearchSheet extends ConsumerStatefulWidget {
   const SearchSheet({super.key});
@@ -100,6 +101,18 @@ class _SearchSheetState extends ConsumerState<SearchSheet> {
                   ),
                   title: Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
                   subtitle: Text(handle.startsWith('@') ? handle : '@$handle', style: GoogleFonts.inter(color: AppColors.mutedForeground)),
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => UserProfileSheet(
+                        handle: handle,
+                        userId: u['id']?.toString(),
+                        initialName: name,
+                      ),
+                    );
+                  },
                 );
               },
             ),

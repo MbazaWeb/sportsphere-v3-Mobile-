@@ -5,6 +5,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../shared/models/post.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
+import '../../profile/presentation/user_profile_sheet.dart';
 import '../../../shared/widgets/ss_refresh.dart';
 
 /// Live Sportlights feed from GET /api/feed
@@ -183,7 +184,20 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => UserProfileSheet(
+                  handle: u.handle,
+                  userId: post.userId,
+                  initialName: u.name,
+                ),
+              );
+            },
+            child: Row(
             children: [
               _Avatar(url: u.avatarUrl, name: u.name),
               const SizedBox(width: 10),
@@ -224,6 +238,7 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
                 ),
               ),
             ],
+          ),
           ),
           if (post.content.isNotEmpty) ...[
             const SizedBox(height: 10),
