@@ -2,8 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// Ultra glassmorphism — iPhone-level depth.
-/// Multi-layer blur, soft specular edge, deep shadow.
+/// Glass card — soft depth, NO full-section gold on hover/press.
 class GlassCard extends StatefulWidget {
   const GlassCard({
     super.key,
@@ -15,8 +14,8 @@ class GlassCard extends StatefulWidget {
     this.enableHover = true,
     this.glow = false,
     this.borderColor,
-    this.blur = 24,
-    this.opacity = 0.07,
+    this.blur = 20,
+    this.opacity = 0.06,
   });
 
   final Widget child;
@@ -40,46 +39,52 @@ class _GlassCardState extends State<GlassCard> {
 
   @override
   Widget build(BuildContext context) {
-    final active = widget.enableHover && _hovered;
+    final hover = widget.enableHover && _hovered;
     final pressed = _pressed;
+
+    // Subtle only — never flood the card with gold
+    final border = widget.borderColor ??
+        Colors.white.withValues(alpha: hover ? 0.14 : 0.08);
 
     return Padding(
       padding: widget.margin ?? EdgeInsets.zero,
       child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
+        onEnter: (_) {
+          if (widget.enableHover) setState(() => _hovered = true);
+        },
         onExit: (_) => setState(() => _hovered = false),
+        cursor: widget.onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
         child: GestureDetector(
-          onTapDown: (_) => setState(() => _pressed = true),
-          onTapUp: (_) {
-            setState(() => _pressed = false);
-            widget.onTap?.call();
-          },
+          behavior: HitTestBehavior.opaque,
+          onTapDown: widget.onTap != null ? (_) => setState(() => _pressed = true) : null,
+          onTapUp: widget.onTap != null
+              ? (_) {
+                  setState(() => _pressed = false);
+                  widget.onTap?.call();
+                }
+              : null,
           onTapCancel: () => setState(() => _pressed = false),
           child: AnimatedScale(
-            scale: pressed ? 0.985 : (active ? 1.01 : 1.0),
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
+            scale: pressed ? 0.99 : 1.0,
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOut,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-              transform: active
-                  ? (Matrix4.identity()..translate(0.0, -3.0))
-                  : Matrix4.identity(),
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(widget.borderRadius),
                 boxShadow: [
-                  // Deep ambient
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: active ? 0.45 : 0.35),
-                    blurRadius: active ? 48 : 36,
-                    offset: const Offset(0, 14),
+                    color: Colors.black.withValues(alpha: hover ? 0.38 : 0.28),
+                    blurRadius: hover ? 28 : 22,
+                    offset: Offset(0, hover ? 10 : 8),
                     spreadRadius: -4,
                   ),
-                  // Soft gold rim light
-                  if (widget.glow || active)
+                  // Optional soft gold rim ONLY if glow=true (e.g. featured)
+                  if (widget.glow)
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: active ? 0.18 : 0.08),
-                      blurRadius: active ? 40 : 24,
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      blurRadius: 20,
                       spreadRadius: 0,
                     ),
                 ],
@@ -87,48 +92,32 @@ class _GlassCardState extends State<GlassCard> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(widget.borderRadius),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: widget.blur,
-                    sigmaY: widget.blur,
-                  ),
-                  child: Container(
+                  filter: ImageFilter.blur(sigmaX: widget.blur, sigmaY: widget.blur),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(widget.borderRadius),
-                      // Layered glass fill
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.white.withValues(alpha: widget.opacity + 0.04),
-                          Colors.white.withValues(alpha: widget.opacity),
-                          Colors.white.withValues(alpha: widget.opacity - 0.01),
-                        ],
-                        stops: const [0.0, 0.45, 1.0],
+                      // Stay glass/dark — slight white lift on hover, NOT gold fill
+                      color: Colors.white.withValues(
+                        alpha: hover ? widget.opacity + 0.025 : widget.opacity,
                       ),
-                      border: Border.all(
-                        width: 1,
-                        color: widget.borderColor ??
-                            Colors.white.withValues(alpha: active ? 0.18 : 0.10),
-                      ),
+                      border: Border.all(width: 1, color: border),
                     ),
                     child: Stack(
                       children: [
-                        // Specular top highlight (iOS glass edge)
+                        // Thin top specular line (iOS glass) — white, not gold
                         Positioned(
                           top: 0,
-                          left: 0,
-                          right: 0,
-                          height: 1.2,
+                          left: 12,
+                          right: 12,
+                          height: 1,
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(widget.borderRadius),
-                              ),
                               gradient: LinearGradient(
                                 colors: [
-                                  Colors.white.withValues(alpha: 0.0),
-                                  Colors.white.withValues(alpha: 0.22),
-                                  Colors.white.withValues(alpha: 0.0),
+                                  Colors.white.withValues(alpha: 0),
+                                  Colors.white.withValues(alpha: 0.18),
+                                  Colors.white.withValues(alpha: 0),
                                 ],
                               ),
                             ),
@@ -151,7 +140,7 @@ class _GlassCardState extends State<GlassCard> {
   }
 }
 
-/// Staggered entrance — soft scale + fade + rise (posts “grow” in).
+/// Staggered entrance for feed posts.
 class AnimatedGlassCard extends StatefulWidget {
   const AnimatedGlassCard({
     super.key,
@@ -185,18 +174,11 @@ class _AnimatedGlassCardState extends State<AnimatedGlassCard>
   void initState() {
     super.initState();
     final delayMs = (widget.index * 55).clamp(0, 400);
-    _c = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 520),
-    );
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 520));
     final curved = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
     _opacity = Tween<double>(begin: 0, end: 1).animate(curved);
-    _scale = Tween<double>(begin: 0.94, end: 1.0).animate(curved);
-    _slide = Tween<Offset>(
-      begin: const Offset(0, 0.06),
-      end: Offset.zero,
-    ).animate(curved);
-
+    _scale = Tween<double>(begin: 0.96, end: 1.0).animate(curved);
+    _slide = Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(curved);
     Future.delayed(Duration(milliseconds: delayMs), () {
       if (mounted) _c.forward();
     });
@@ -221,6 +203,7 @@ class _AnimatedGlassCardState extends State<AnimatedGlassCard>
             borderRadius: widget.borderRadius,
             onTap: widget.onTap,
             glow: widget.glow,
+            enableHover: true,
             child: widget.child,
           ),
         ),
