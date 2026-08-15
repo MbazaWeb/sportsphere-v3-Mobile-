@@ -8,6 +8,8 @@ import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import 'domain/profile_role_registry.dart';
 import 'presentation/edit_profile_sheet.dart';
+import 'presentation/role_upgrade_sheet.dart';
+import 'presentation/role_tab_content.dart';
 
 /// Own profile — structure matches web ProfileTab + profileConfig role tabs.
 class ProfileTab extends ConsumerStatefulWidget {
@@ -386,41 +388,38 @@ class _RoleTabBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    switch (tabId) {
-      case 'overview':
-        return _OverviewBody(user: user, roleCfg: roleCfg, onEdit: onEdit, onSignOut: onSignOut);
-      case 'about':
-        return _AboutBody(user: user, roleCfg: roleCfg);
-      case 'feed':
-      case 'posts':
-        return _PlaceholderBody(
-          title: 'Posts',
-          subtitle: 'Your posts will appear here — same feed filter as web.',
-        );
-      case 'career':
-        return _PlaceholderBody(
-          title: 'Career',
-          subtitle: roleCfg.role == 'player'
-              ? 'Clubs, seasons, and appearances from role profile data.'
-              : 'Career history for ${roleCfg.label.toLowerCase()}s.',
-        );
-      case 'statistics':
-      case 'matches':
-      case 'squad':
-      case 'fixtures':
-      case 'tactics':
-      case 'reports':
-      case 'watchlist':
-        return _PlaceholderBody(
-          title: roleCfg.tabs.firstWhere((t) => t.id == tabId, orElse: () => ProfileTabDef(tabId, tabId)).label,
-          subtitle: 'Role-specific ${roleCfg.label} data loads from profile-data API when available.',
-        );
-      default:
-        return _PlaceholderBody(
-          title: roleCfg.tabs.firstWhere((t) => t.id == tabId, orElse: () => ProfileTabDef(tabId, tabId)).label,
-          subtitle: 'Section for ${roleCfg.emoji} ${roleCfg.label} profiles.',
-        );
+    final role = roleCfg.role;
+    final usesProfileData = {
+      'career', 'statistics', 'achievements', 'matches', 'overview',
+    }.contains(tabId) && role != 'fan';
+
+    if (tabId == 'overview') {
+      return Column(
+        children: [
+          Expanded(
+            child: usesProfileData
+                ? RoleTabContent(tabId: 'overview', role: role)
+                : _OverviewBody(user: user, roleCfg: roleCfg, onEdit: onEdit, onSignOut: onSignOut),
+          ),
+        ],
+      );
     }
+    if (tabId == 'about') {
+      return _AboutBody(user: user, roleCfg: roleCfg);
+    }
+    if (tabId == 'feed' || tabId == 'posts') {
+      return _PlaceholderBody(
+        title: 'Posts',
+        subtitle: 'Your posts will appear here — same feed filter as web.',
+      );
+    }
+    if (usesProfileData) {
+      return RoleTabContent(tabId: tabId, role: role);
+    }
+    return _PlaceholderBody(
+      title: roleCfg.tabs.firstWhere((t) => t.id == tabId, orElse: () => ProfileTabDef(tabId, tabId)).label,
+      subtitle: 'Section for ${roleCfg.emoji} ${roleCfg.label} profiles.',
+    );
   }
 }
 
@@ -484,6 +483,21 @@ class _OverviewBody extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right, color: AppColors.mutedForeground),
                 onTap: onEdit,
               ),
+              if (roleCfg.role == 'fan')
+                ListTile(
+                  leading: const Icon(Icons.workspace_premium_outlined, color: AppColors.primary),
+                  title: Text('Upgrade role', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  subtitle: Text('Become a player, coach, creator…', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
+                  trailing: const Icon(Icons.chevron_right, color: AppColors.mutedForeground),
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => const RoleUpgradeSheet(),
+                    );
+                  },
+                ),
               const _BiometricTile(),
               ListTile(
                 leading: const Icon(Icons.logout, color: AppColors.destructive),

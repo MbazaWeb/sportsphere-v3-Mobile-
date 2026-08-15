@@ -6,6 +6,8 @@ import '../../features/home/data/feed_api.dart';
 import '../../features/social/data/social_api.dart';
 import '../../features/messages/data/messages_api.dart';
 import '../../features/profile/data/profile_api.dart';
+import '../../features/profile/data/roles_api.dart';
+import '../../features/profile/data/profile_data_api.dart';
 import '../../features/media/data/upload_api.dart';
 import '../../shared/models/user_profile.dart';
 import '../../shared/models/post.dart';
@@ -33,6 +35,8 @@ final predictionsApiProvider = Provider((ref) => PredictionsApi(ref.watch(apiCli
 final socialApiProvider = Provider((ref) => SocialApi(ref.watch(apiClientProvider)));
 final messagesApiProvider = Provider((ref) => MessagesApi(ref.watch(apiClientProvider)));
 final profileApiProvider = Provider((ref) => ProfileApi(ref.watch(apiClientProvider)));
+final rolesApiProvider = Provider((ref) => RolesApi(ref.watch(apiClientProvider)));
+final profileDataApiProvider = Provider((ref) => ProfileDataApi(ref.watch(apiClientProvider)));
 final uploadApiProvider = Provider((ref) {
   final storage = ref.watch(tokenStorageProvider);
   return UploadApi(tokenProvider: storage.readToken);
