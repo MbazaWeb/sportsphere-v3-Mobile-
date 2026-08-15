@@ -16,6 +16,11 @@ class ProfileApi {
     List<String>? sportsFollowing,
     List<String>? interests,
     Map<String, bool>? notifPrefs,
+    Map<String, bool>? privacySettings,
+    String? theme,
+    String? fontSize,
+    bool? reducedMotion,
+    bool? highContrast,
   }) async {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
@@ -27,6 +32,11 @@ class ProfileApi {
     if (sportsFollowing != null) body['sportsFollowing'] = sportsFollowing;
     if (interests != null) body['interests'] = interests;
     if (notifPrefs != null) body['notifPrefs'] = notifPrefs;
+    if (privacySettings != null) body['privacySettings'] = privacySettings;
+    if (theme != null) body['theme'] = theme;
+    if (fontSize != null) body['fontSize'] = fontSize;
+    if (reducedMotion != null) body['reducedMotion'] = reducedMotion;
+    if (highContrast != null) body['highContrast'] = highContrast;
 
     final data = await _client.putJson('/profile', body: body);
     final map = data is Map<String, dynamic>

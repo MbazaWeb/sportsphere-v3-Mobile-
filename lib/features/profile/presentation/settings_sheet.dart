@@ -9,6 +9,8 @@ import 'edit_profile_sheet.dart';
 import 'role_upgrade_sheet.dart';
 import 'sports_interests_sheet.dart';
 import 'notif_prefs_sheet.dart';
+import 'privacy_sheet.dart';
+import 'appearance_sheet.dart';
 
 /// Settings — mirrors web SettingsSection groups.
 class SettingsSheet extends ConsumerWidget {
@@ -104,6 +106,14 @@ class SettingsSheet extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Column(
                     children: [
+                      _tile(Icons.visibility_outlined, 'Privacy', () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const PrivacySheet(),
+                        );
+                      }),
                       const _BiometricSettingsTile(),
                       _tile(Icons.notifications_none, 'Notifications', () {
                         showModalBottomSheet(
@@ -114,8 +124,11 @@ class SettingsSheet extends ConsumerWidget {
                         );
                       }),
                       _tile(Icons.palette_outlined, 'Appearance', () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Dark sports theme is the default (matches web)')),
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const AppearanceSheet(),
                         );
                       }),
                       if (isFan)

@@ -28,6 +28,11 @@ class UserProfile {
     this.aboutMe,
     this.interests = const [],
     this.notifPrefs = const {},
+    this.privacySettings = const {},
+    this.theme = 'dark',
+    this.fontSize = 'medium',
+    this.reducedMotion = false,
+    this.highContrast = false,
     this.website,
     this.coverGradient,
     this.coverUrl,
@@ -64,6 +69,11 @@ class UserProfile {
   final String? aboutMe;
   final List<String> interests;
   final Map<String, bool> notifPrefs;
+  final Map<String, bool> privacySettings;
+  final String theme;
+  final String fontSize;
+  final bool reducedMotion;
+  final bool highContrast;
   final String? website;
   final String? coverGradient;
   final String? coverUrl;
@@ -106,6 +116,17 @@ class UserProfile {
         }
         return <String, bool>{};
       }(),
+      privacySettings: () {
+        final n = j['privacySettings'];
+        if (n is Map) {
+          return n.map((k, v) => MapEntry(k.toString(), v == true));
+        }
+        return <String, bool>{};
+      }(),
+      theme: j['theme']?.toString() ?? 'dark',
+      fontSize: j['fontSize']?.toString() ?? 'medium',
+      reducedMotion: j['reducedMotion'] == true,
+      highContrast: j['highContrast'] == true,
       website: j['website']?.toString(),
       coverGradient: j['coverGradient']?.toString(),
       coverUrl: j['coverUrl']?.toString(),
