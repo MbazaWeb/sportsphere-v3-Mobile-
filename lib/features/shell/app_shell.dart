@@ -5,6 +5,9 @@ import '../auth/login_sheet.dart';
 import '../auth/register_sheet.dart';
 import '../home/home_tab.dart';
 import '../scores/scores_tab.dart';
+import '../create/create_tab.dart';
+import '../activity/activity_tab.dart';
+import '../profile/profile_tab.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -53,10 +56,7 @@ class _AppShellState extends State<AppShell> {
               gradient: RadialGradient(
                 center: Alignment.topCenter,
                 radius: 1.4,
-                colors: [
-                  AppColors.backgroundSecondary,
-                  AppColors.background,
-                ],
+                colors: [AppColors.backgroundSecondary, AppColors.background],
               ),
             ),
           ),
@@ -73,29 +73,20 @@ class _AppShellState extends State<AppShell> {
               isAuthenticated: _isAuthenticated,
               visible: _navVisible,
               onTabSelected: (tab) {
-                if ((tab == AppTab.create ||
-                        tab == AppTab.activity ||
-                        tab == AppTab.profile) &&
-                    !_isAuthenticated) {
-                  _openLogin();
-                  return;
-                }
+                // Allow browsing all tabs; create/activity/profile show guest-friendly UI
                 setState(() => _current = tab);
               },
               onLoginTap: _openLogin,
             ),
           ),
-
-          // Auth overlays
           if (_showLogin)
             LoginSheet(
               onClose: _closeAuth,
               onSuccess: _onAuthSuccess,
               onOpenRegister: _openRegister,
               onOpenForgot: () {
-                // Placeholder for forgot password
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Forgot password — coming next')),
+                  const SnackBar(content: Text('Forgot password — wire with login')),
                 );
               },
             ),
@@ -117,47 +108,14 @@ class _AppShellState extends State<AppShell> {
       case AppTab.scores:
         return const ScoresTab();
       case AppTab.create:
-        return const _Placeholder(title: 'Create', icon: Icons.add_circle_rounded);
+        return const CreateTab();
       case AppTab.activity:
-        return const _Placeholder(title: 'Activity', icon: Icons.notifications_rounded);
+        return const ActivityTab();
       case AppTab.profile:
-        return _Placeholder(
-          title: _isAuthenticated ? 'Profile' : 'Profile',
-          icon: Icons.person_rounded,
-          subtitle: _isAuthenticated ? 'You are signed in (demo)' : 'Sign in to view profile',
+        return ProfileTab(
+          isAuthenticated: _isAuthenticated,
+          onSignIn: _openLogin,
         );
     }
-  }
-}
-
-class _Placeholder extends StatelessWidget {
-  const _Placeholder({
-    required this.title,
-    required this.icon,
-    this.subtitle = 'Coming next',
-  });
-  final String title;
-  final IconData icon;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: AppColors.primary.withValues(alpha: 0.5)),
-          const SizedBox(height: 16),
-          Text(title, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.mutedForeground,
-                ),
-          ),
-        ],
-      ),
-    );
   }
 }

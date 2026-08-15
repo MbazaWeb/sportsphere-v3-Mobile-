@@ -4,6 +4,8 @@ import '../storage/token_storage.dart';
 import '../../features/auth/data/auth_api.dart';
 import '../../features/home/data/feed_api.dart';
 import '../../shared/models/user_profile.dart';
+import '../../shared/models/post.dart';
+import '../../shared/models/match.dart';
 
 final tokenStorageProvider = Provider((ref) => TokenStorage());
 
@@ -15,10 +17,10 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 final authApiProvider = Provider((ref) => AuthApi(ref.watch(apiClientProvider)));
 final feedApiProvider = Provider((ref) => FeedApi(ref.watch(apiClientProvider)));
 final matchesApiProvider = Provider((ref) => MatchesApi(ref.watch(apiClientProvider)));
+final standingsApiProvider = Provider((ref) => StandingsApi(ref.watch(apiClientProvider)));
 final pollsApiProvider = Provider((ref) => PollsApi(ref.watch(apiClientProvider)));
 final predictionsApiProvider = Provider((ref) => PredictionsApi(ref.watch(apiClientProvider)));
 
-/// Auth session state
 class AuthState {
   const AuthState({
     this.user,
@@ -96,10 +98,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final result = await _authApi.register(
-        name: name,
-        email: email,
-        handle: handle,
-        password: password,
+        name: name, email: email, handle: handle, password: password,
       );
       await _storage.saveToken(result.token, expiresAt: result.expiresAt);
       state = AuthState(user: result.user, hydrated: true);
@@ -121,7 +120,14 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(ref.watch(authApiProvider), ref.watch(tokenStorageProvider));
 });
 
-/// Feed provider
-final feedProvider = FutureProvider.family<List, String?>((ref, type) async {
-  return ref.watch(feedApiProvider).getFeed(type: type);
+final feedProvider = FutureProvider.family<List<Post>, String?>((ref, type) async {
+  return ref.watch(feedApiProvider).getFeed(type: type, limit: 30);
+});
+
+final matchesProvider = FutureProvider.family<List<MatchItem>, String?>((ref, status) async {
+  return ref.watch(matchesApiProvider).getMatches(status: status);
+});
+
+final standingsProvider = FutureProvider((ref) async {
+  return ref.watch(standingsApiProvider).getStandings();
 });

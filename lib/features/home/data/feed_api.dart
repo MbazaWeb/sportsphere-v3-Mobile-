@@ -1,7 +1,7 @@
 import '../../../core/network/api_client.dart';
 import '../../../shared/models/post.dart';
+import '../../../shared/models/match.dart';
 
-/// GET /api/feed
 class FeedApi {
   FeedApi(this._client);
   final ApiClient _client;
@@ -12,7 +12,9 @@ class FeedApi {
       if (limit != null) 'limit': '$limit',
       if (offset != null) 'offset': '$offset',
     };
-    final qs = q.isEmpty ? '' : '?${q.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}';
+    final qs = q.isEmpty
+        ? ''
+        : '?${q.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}';
     final data = await _client.getJson('/feed$qs');
     final list = data is List
         ? data
@@ -26,24 +28,46 @@ class FeedApi {
   }
 }
 
-/// GET /api/matches
 class MatchesApi {
   MatchesApi(this._client);
   final ApiClient _client;
 
-  Future<List<Map<String, dynamic>>> getMatches({String? status}) async {
-    final qs = status != null ? '?status=$status' : '';
+  Future<List<MatchItem>> getMatches({String? status}) async {
+    final qs = status != null ? '?status=${Uri.encodeComponent(status)}' : '';
     final data = await _client.getJson('/matches$qs');
     final list = data is List
         ? data
         : (data is Map && data['data'] is List)
             ? data['data'] as List
             : <dynamic>[];
-    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return list
+        .whereType<Map>()
+        .map((e) => MatchItem.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 }
 
-/// GET /api/polls  POST /api/polls/vote
+class StandingsApi {
+  StandingsApi(this._client);
+  final ApiClient _client;
+
+  Future<({String league, List<StandingRow> rows})> getStandings() async {
+    final data = await _client.getJson('/standings');
+    if (data is! Map) {
+      return (league: 'League', rows: <StandingRow>[]);
+    }
+    final map = Map<String, dynamic>.from(data);
+    final league = map['league']?.toString() ?? 'League';
+    final raw = map['standings'];
+    final list = raw is List ? raw : <dynamic>[];
+    final rows = list
+        .whereType<Map>()
+        .map((e) => StandingRow.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+    return (league: league, rows: rows);
+  }
+}
+
 class PollsApi {
   PollsApi(this._client);
   final ApiClient _client;
@@ -53,16 +77,8 @@ class PollsApi {
     final list = data is List ? data : <dynamic>[];
     return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
-
-  Future<void> vote({required String pollId, required int optionIndex}) async {
-    await _client.postJson('/polls/vote', body: {
-      'pollId': pollId,
-      'optionIndex': optionIndex,
-    });
-  }
 }
 
-/// GET /api/predictions
 class PredictionsApi {
   PredictionsApi(this._client);
   final ApiClient _client;
