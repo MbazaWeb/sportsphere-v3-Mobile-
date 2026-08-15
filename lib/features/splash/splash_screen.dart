@@ -40,21 +40,16 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Longer splash so every word is readable (~550ms each)
-    // Progress bar still eases; words advance on a linear clock.
+    // 9 words × ~700ms readable = ~6.3s progress; total splash ~7.5s
+    // LINEAR progress so % and words stay in sync (no ease skipping words).
     _progressCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 5200),
+      duration: const Duration(milliseconds: 6300),
     );
     _progressAnim = CurvedAnimation(
       parent: _progressCtrl,
-      curve: Curves.easeOutCubic,
-    )..addListener(() {
-        setState(() => _pct = (_progressAnim.value * 100).round().clamp(0, 100));
-      });
-
-    // Linear word cycle: equal time per word, independent of ease curve
-    _startWordCycle();
+      curve: Curves.linear, // sync with equal word slots
+    )..addListener(_onProgressTick);
 
     _logoEnterCtrl = AnimationController(
       vsync: this,
@@ -119,30 +114,44 @@ class _SplashScreenState extends State<SplashScreen>
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _taglineCtrl.forward();
     });
-    // Exit after all words + progress complete
-    Future.delayed(const Duration(milliseconds: 5600), () {
+    // Exit after progress reaches 100% and last word has been readable
+    Future.delayed(const Duration(milliseconds: 6800), () {
       if (mounted) _fadeOutCtrl.forward();
     });
-    Future.delayed(const Duration(milliseconds: 6400), () {
+    Future.delayed(const Duration(milliseconds: 7600), () {
       if (mounted) widget.onDone();
     });
   }
 
 
-  /// Shows every word in order with equal dwell time (smooth, no skips).
-  void _startWordCycle() async {
-    const perWordMs = 520; // 9 words ≈ 4.7s, fits inside 5.2s progress
-    const fadeMs = 120;
-    for (var i = 0; i < _words.length; i++) {
-      if (!mounted) return;
+  /// Progress % and words share the same linear clock.
+  /// Each word owns an equal slice of 0–100% (~11.1% each).
+  void _onProgressTick() {
+    final p = (_progressAnim.value * 100);
+    final pct = p.round().clamp(0, 100);
+    // Map progress to word index (0..8), hold last word at 100%
+    final idx = p >= 99.5
+        ? _words.length - 1
+        : (p / 100 * _words.length).floor().clamp(0, _words.length - 1);
+
+    if (pct != _pct) {
+      setState(() => _pct = pct);
+    }
+    if (idx != _wordIndex) {
+      // brief fade out then show next word
       setState(() => _wordVisible = false);
-      await Future.delayed(const Duration(milliseconds: fadeMs));
-      if (!mounted) return;
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        setState(() {
+          _wordIndex = idx;
+          _wordVisible = true;
+        });
+      });
+    } else if (_wordIndex < 0 && p > 1) {
       setState(() {
-        _wordIndex = i;
+        _wordIndex = 0;
         _wordVisible = true;
       });
-      await Future.delayed(const Duration(milliseconds: perWordMs));
     }
   }
 
@@ -283,7 +292,7 @@ class _SplashScreenState extends State<SplashScreen>
                               // Word — height ~8% of screen
                               SizedBox(height: size.height * 0.02),
                               SizedBox(
-                                height: size.height * 0.07,
+                                height: size.height * 0.055,
                                 child: Center(
                                   child: _wordIndex < 0
                                       ? const SizedBox.shrink()
@@ -295,10 +304,11 @@ class _SplashScreenState extends State<SplashScreen>
                                             _words[_wordIndex].toUpperCase(),
                                             textAlign: TextAlign.center,
                                             style: GoogleFonts.outfit(
-                                              fontSize: (size.width * 0.05)
-                                                  .clamp(20.0, 36.0),
-                                              fontWeight: FontWeight.w900,
-                                              letterSpacing: 4,
+                                              // Smaller than logo (logo ~58% width)
+                                              fontSize: (size.width * 0.038)
+                                                  .clamp(16.0, 26.0),
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 3,
                                               color: Colors.white,
                                               decoration: TextDecoration.none,
                                               shadows: [
