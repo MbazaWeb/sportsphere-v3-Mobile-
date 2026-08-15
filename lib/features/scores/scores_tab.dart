@@ -63,10 +63,13 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final dates = List.generate(7, (i) => now.subtract(Duration(days: 3 - i)));
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.92),
-        border: Border(bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.6))),
+        color: AppColors.background.withValues(alpha: 0.88),
+        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
       ),
       child: SafeArea(
         bottom: false,
@@ -78,37 +81,42 @@ class _Header extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    Text('Scores', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800)),
+                    Text('Scores', style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
                     const Spacer(),
-                    Icon(Icons.filter_list, color: AppColors.mutedForeground, size: 22),
+                    Icon(Icons.tune_rounded, color: AppColors.mutedForeground, size: 22),
                   ],
                 ),
               ),
             ),
             SizedBox(
-              height: 44,
+              height: 42,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
                 itemCount: _ScoresTabState._subs.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
                 itemBuilder: (context, i) {
                   final (id, label) = _ScoresTabState._subs[i];
                   final active = sub == id;
                   return GestureDetector(
                     onTap: () => onChanged(id),
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOutCubic,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: active ? AppColors.primary : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
+                        color: active ? AppColors.primary : Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: active
+                            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 3))]
+                            : null,
                       ),
                       child: Text(
                         label,
                         style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.15,
                           color: active ? AppColors.primaryForeground : AppColors.mutedForeground,
                         ),
                       ),
@@ -117,6 +125,39 @@ class _Header extends StatelessWidget {
                 },
               ),
             ),
+            if (sub != 'standings')
+              SizedBox(
+                height: 56,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  itemCount: dates.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    final d = dates[i];
+                    final isToday = d.year == now.year && d.month == now.month && d.day == now.day;
+                    final wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1];
+                    return Container(
+                      width: 52,
+                      decoration: BoxDecoration(
+                        color: isToday ? AppColors.primary.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.03),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isToday ? AppColors.primary.withValues(alpha: 0.45) : Colors.white.withValues(alpha: 0.06),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(wd, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: isToday ? AppColors.primary : AppColors.mutedForeground)),
+                          const SizedBox(height: 2),
+                          Text('${d.day}', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: isToday ? AppColors.primary : AppColors.foreground)),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
           ],
         ),
       ),

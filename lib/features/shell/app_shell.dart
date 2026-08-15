@@ -108,9 +108,9 @@ class _AppShellState extends State<AppShell> {
       case AppTab.scores:
         return const ScoresTab();
       case AppTab.create:
-        return const CreateTab();
+        return CreateTab(onNeedLogin: _openLogin);
       case AppTab.activity:
-        return const ActivityTab();
+        return ActivityTab(onSignIn: _openLogin);
       case AppTab.profile:
         return ProfileTab(
           isAuthenticated: _isAuthenticated,
