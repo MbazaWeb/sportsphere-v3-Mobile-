@@ -315,6 +315,14 @@ class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
+  bool get _isCors {
+    final m = message.toLowerCase();
+    return m.contains('failed to fetch') ||
+        m.contains('cors') ||
+        m.contains('xmlhttprequest') ||
+        m.contains('network');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -323,9 +331,18 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Could not load feed', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16)),
+            Text(
+              _isCors ? 'Browser blocked the API (CORS)' : 'Could not load feed',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            Text(message, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
+            Text(
+              _isCors
+                  ? 'Flutter Web on localhost cannot call sportssphere.fun until the API allows this origin.\n\nUse Chrome with web security disabled for local web, or run on Android/iOS (no CORS).'
+                  : message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(fontSize: 12.5, height: 1.45, color: AppColors.mutedForeground),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
