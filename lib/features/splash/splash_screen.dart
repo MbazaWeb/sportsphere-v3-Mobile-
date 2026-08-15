@@ -68,19 +68,36 @@ class _SplashScreenState extends State<SplashScreen>
 
     _logoEnterCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
     );
     _logoOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _logoEnterCtrl, curve: const Interval(0, 0.75)),
     );
+    // Premium entrance: scale up from depth + soft settle
     _logoScale = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.8, end: 1.02), weight: 60),
-      TweenSequenceItem(tween: Tween(begin: 1.02, end: 1.0), weight: 40),
-    ]).animate(CurvedAnimation(parent: _logoEnterCtrl, curve: Curves.easeOut));
+      TweenSequenceItem(
+        tween: Tween(begin: 0.55, end: 1.06)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 70,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.06, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 30,
+      ),
+    ]).animate(_logoEnterCtrl);
     _logoDy = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 20.0, end: -2.0), weight: 60),
-      TweenSequenceItem(tween: Tween(begin: -2.0, end: 0.0), weight: 40),
-    ]).animate(CurvedAnimation(parent: _logoEnterCtrl, curve: Curves.easeOut));
+      TweenSequenceItem(
+        tween: Tween(begin: 36.0, end: -4.0)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 70,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: -4.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 30,
+      ),
+    ]).animate(_logoEnterCtrl);
 
     _spinCtrl = AnimationController(
       vsync: this,
@@ -99,7 +116,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     _taglineCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
     );
 
     _fadeOutCtrl = AnimationController(
@@ -151,10 +168,17 @@ class _SplashScreenState extends State<SplashScreen>
         final exitT = _fadeOutCtrl.value;
 
         // Full-screen Stack — mirrors fixed inset:0 on web. Never overflows.
+        // Exit: fade + push into depth (subtle 3D)
+        final exitMatrix = Matrix4.identity()
+          ..setEntry(3, 2, 0.001) // perspective
+          ..rotateX(-0.12 * exitT) // slight tilt away
+          ..scale(1.0 + exitT * 0.08, 1.0 + exitT * 0.08);
+
         return Opacity(
           opacity: 1.0 - exitT,
-          child: Transform.scale(
-            scale: 1.0 + exitT * 0.05,
+          child: Transform(
+            alignment: Alignment.center,
+            transform: exitMatrix,
             child: SizedBox(
               width: size.width,
               height: size.height,
@@ -232,8 +256,8 @@ class _SplashScreenState extends State<SplashScreen>
                                   child: Transform.scale(
                                     scale: _logoScale.value,
                                     child: SizedBox(
-                                      width: math.min(size.width * 0.45, 240),
-                                      height: math.min(size.height * 0.22, 160),
+                                      width: math.min(size.width * 0.58, 300),
+                                      height: math.min(size.height * 0.28, 200),
                                       child: SvgPicture.asset(
                                         'assets/images/logo.svg',
                                         fit: BoxFit.contain,
