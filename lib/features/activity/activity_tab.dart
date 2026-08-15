@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
+import '../messages/presentation/chat_thread_sheet.dart';
 
 /// Activity tab — guest gate + live notifications when signed in.
 class ActivityTab extends ConsumerStatefulWidget {
@@ -265,7 +266,24 @@ class _ActivityTabState extends ConsumerState<ActivityTab> {
                                     final handle = c['partnerHandle']?.toString() ?? '';
                                     final last = c['lastMessage']?.toString() ?? '';
                                     final unread = (c['unread'] as num?)?.toInt() ?? 0;
-                                    return GlassCard(
+                                    final partnerId = c['partnerId']?.toString() ?? '';
+                                    return GestureDetector(
+                                      onTap: partnerId.isEmpty
+                                          ? null
+                                          : () {
+                                              showModalBottomSheet(
+                                                context: context,
+                                                isScrollControlled: true,
+                                                backgroundColor: Colors.transparent,
+                                                builder: (_) => ChatThreadSheet(
+                                                  partnerId: partnerId,
+                                                  partnerName: name,
+                                                  partnerHandle: handle,
+                                                  seedMessage: last,
+                                                ),
+                                              );
+                                            },
+                                      child: GlassCard(
                                       borderRadius: 16,
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                       child: Row(
@@ -316,6 +334,7 @@ class _ActivityTabState extends ConsumerState<ActivityTab> {
                                             ),
                                         ],
                                       ),
+                                    ),
                                     );
                                   },
                                 ),

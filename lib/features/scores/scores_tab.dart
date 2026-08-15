@@ -6,6 +6,7 @@ import '../../shared/models/match.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import '../../shared/widgets/ss_refresh.dart';
+import '../../core/realtime/scores_live.dart';
 
 /// Scores tab — live matches + standings from API
 class ScoresTab extends ConsumerStatefulWidget {
@@ -17,6 +18,8 @@ class ScoresTab extends ConsumerStatefulWidget {
 
 class _ScoresTabState extends ConsumerState<ScoresTab> {
   String _sub = 'live'; // live | today | upcoming | results | standings
+  final _live = ScoresLiveClient();
+  String _liveStatus = 'idle';
 
   static const _subs = [
     ('live', 'Live'),
@@ -27,10 +30,32 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _live.connect(onUpdate: (payload) {
+      // Soft refresh match lists on any live event
+      ref.invalidate(matchesProvider('live'));
+      ref.invalidate(matchesProvider('today'));
+      if (payload['type'] == 'match_update') {
+        ref.invalidate(matchesProvider(null));
+      }
+    });
+    _live.status$.listen((s) {
+      if (mounted) setState(() => _liveStatus = s);
+    });
+  }
+
+  @override
+  void dispose() {
+    _live.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _Header(sub: _sub, onChanged: (s) => setState(() => _sub = s)),
+        _Header(sub: _sub, liveStatus: _liveStatus, onChanged: (s) => setState(() => _sub = s)),
         Expanded(
           child: _sub == 'standings'
               ? const _StandingsView()
@@ -57,8 +82,9 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.sub, required this.onChanged});
+  const _Header({required this.sub, required this.onChanged, this.liveStatus = 'idle'});
   final String sub;
+  final String liveStatus;
   final ValueChanged<String> onChanged;
 
   @override
@@ -81,7 +107,29 @@ class _Header extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    Text('Scores', style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+                    Row(
+                      children: [
+                        Text('Scores', style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: liveStatus == 'connected'
+                                ? const Color(0xFF22C55E).withValues(alpha: 0.15)
+                                : Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            liveStatus == 'connected' ? 'LIVE' : liveStatus.toUpperCase(),
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: liveStatus == 'connected' ? const Color(0xFF22C55E) : AppColors.mutedForeground,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const Spacer(),
                     Icon(Icons.tune_rounded, color: AppColors.mutedForeground, size: 22),
                   ],
